@@ -24,14 +24,19 @@ final class SupportTest extends TestCase
         self::assertSame('November 04, 2026', Format::longDate('2026-11-04'));
     }
 
-    public function testChartContainsTitleLegendAndBars(): void
+    public function testChartContainsTitleBarsAndValues(): void
     {
         $svg = BarChart::svg([['label' => 'Iced Coffee', 'value' => 55], ['label' => 'Hot Coffee', 'value' => 40]]);
 
         self::assertStringContainsString('Top 10 Most Stocked Products', $svg);
-        self::assertStringContainsString('Quantity', $svg);
-        self::assertSame(3, substr_count($svg, 'fill="#FFDEAD"')); // legend swatch + 2 bars
+        self::assertSame(2, substr_count($svg, '<rect '));          // one bar per product
         self::assertStringContainsString('>55<', $svg);
+        self::assertStringContainsString('Iced Coffee', $svg);
+    }
+
+    public function testEmptyChartShowsMessage(): void
+    {
+        self::assertStringContainsString('No products to chart', BarChart::svg([]));
     }
 
     public function testChartEscapesProductNames(): void

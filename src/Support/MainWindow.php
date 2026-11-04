@@ -63,26 +63,32 @@ final class MainWindow
             ];
             $rows[] = $row + [
                 'price_display' => Format::peso($p->price),
-                'date_display'  => Format::dotnetDateTime((string) $p->date_added),
+                'date_display'  => $p->date_added ? date('M j, Y', strtotime((string) $p->date_added) ?: time()) : '',
+                'initials'      => mb_strtoupper(mb_substr((string) $p->product_name, 0, 2)),
+                'low'           => $p->quantity <= 10,
                 'json'          => json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ];
         }
 
-        // Summary labels (C# UpdateSummaryLabels).
+        // Summary (C# UpdateSummaryLabels): total value, most and lowest stocked.
         if ($products->isEmpty()) {
             $summary = [
-                'total' => 'Total: ₱0.00',
-                'most'  => 'Most Stocked: N/A',
-                'least' => 'Lowest Stocked: N/A',
+                'total' => Format::peso(0),
+                'most'  => 'N/A', 'mostQty' => '',
+                'least' => 'N/A', 'leastQty' => '',
+                'units' => 0,
             ];
         } else {
             $total = $products->sum(static fn (Product $p): float => $p->price * $p->quantity);
             $most  = $products->sortByDesc('quantity')->first();
             $least = $products->sortBy('quantity')->first();
             $summary = [
-                'total' => 'Total Value: ' . Format::peso($total),
-                'most'  => sprintf('Most Stocked: %s (%d units)', $most->product_name, $most->quantity),
-                'least' => sprintf('Lowest Stocked: %s (%d units)', $least->product_name, $least->quantity),
+                'total'    => Format::peso($total),
+                'most'     => $most->product_name,
+                'mostQty'  => $most->quantity . ' units',
+                'least'    => $least->product_name,
+                'leastQty' => $least->quantity . ' units',
+                'units'    => number_format((int) $products->sum('quantity')),
             ];
         }
 
@@ -122,11 +128,26 @@ final class MainWindow
                 'day_off'  => (string) $s->day_off,
                 'payroll_employee_id' => (string) $s->payroll_employee_id,
             ];
-            $rows[] = $row + ['json' => json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
+            $rows[] = $row + [
+                'initials' => self::initials((string) $s->names),
+                'json'     => json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ];
+        }
+
+        // Day-off board: who is off on each day of the week.
+        $board = [];
+        foreach (EmployeeShift::DAYS as $day) {
+            $names = array_values(array_map(
+                static fn (array $r): string => $r['names'],
+                array_filter($rows, static fn (array $r): bool => $r['day_off'] === $day)
+            ));
+            $board[] = ['day' => substr($day, 0, 3), 'names' => implode(', ', $names), 'taken' => $names !== []];
         }
 
         return [
             'rows' => $rows,
+            'count' => count($rows),
+            'board' => $board,
             'days' => array_map(static fn (string $d): array => ['value' => $d], EmployeeShift::DAYS),
             'start' => self::dateParam($query['sched_start'] ?? null),
             'end'   => self::dateParam($query['sched_end'] ?? null),
@@ -164,11 +185,23 @@ final class MainWindow
                 'breaks' => (string) $shift->breaks, 'duties' => (string) $shift->duties,
                 'day_off' => (string) $shift->day_off,
             ] : null;
-            $rows[] = $row + ['json' => json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
+            $rows[] = $row + [
+                'initials'      => self::initials((string) $p->name),
+                'gross_display' => Format::peso($p->gross_pay),
+                'net_display'   => Format::peso($p->net_pay),
+                'ded_display'   => Format::peso($p->total_deductions),
+                'json'          => json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ];
         }
+
+        $all = Payroll::query()->get();
 
         return [
             'rows'         => $rows,
+            'count'        => count($rows),
+            'totalNet'     => Format::peso($all->sum('net_pay')),
+            'totalGross'   => Format::peso($all->sum('gross_pay')),
+            'totalDed'     => Format::peso($all->sum('total_deductions')),
             'holidayTypes' => array_map(static fn (string $t): array => ['value' => $t], Payroll::HOLIDAY_TYPES),
             'selected'     => (string) ($query['selected'] ?? ''),
             'start'        => self::dateParam($query['pay_start'] ?? null),
@@ -186,6 +219,15 @@ final class MainWindow
         }
 
         return '/' . ltrim($path, '/');
+    }
+
+    private static function initials(string $name): string
+    {
+        $parts = preg_split('/\s+/', trim($name)) ?: [];
+        $first = mb_substr($parts[0] ?? '', 0, 1);
+        $last = count($parts) > 1 ? mb_substr((string) end($parts), 0, 1) : '';
+
+        return mb_strtoupper($first . $last);
     }
 
     private static function dateParam(mixed $value): string

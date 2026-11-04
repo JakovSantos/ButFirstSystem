@@ -70,6 +70,8 @@ final class View
             'user'      => $user,
             'isAdmin'   => ($user['role'] ?? null) === 'admin',
             'isEmployee' => ($user['role'] ?? null) === 'employee',
+            'userInitial' => strtoupper(substr((string) ($user['username'] ?? ''), 0, 1)),
+            'roleLabel' => ($user['role'] ?? null) === 'admin' ? 'Administrator' : 'Employee',
             'flash'     => Session::pullFlash(),
             'year'      => date('Y'),
         ];

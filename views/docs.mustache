@@ -1,6 +1,6 @@
-<div class="page-card">
-    <div class="page-header"><img src="/assets/img/logo.png" alt="" width="47" height="53"><span>BUT FIRST, SYSTEM — API Reference</span></div>
-    <div class="page-body">
+<div class="page"><div class="card">
+    <div class="page-hero"><img src="/assets/img/logo.png" alt=""><span>BUT FIRST SYSTEM · API reference</span></div>
+    <div class="prose"><h1>API reference</h1>
         <p>All responses are JSON (<code>Content-Type: application/json</code>). Authenticate with the logged-in session cookie
            or send the header <code>X-API-Key: butfirst-dev-key</code> (change it with the <code>API_KEY</code> environment variable).
            Write endpoints for products and payroll require the admin role.</p>
@@ -26,4 +26,5 @@ curl -X POST http://localhost:8000/api/products -H "X-API-Key: butfirst-dev-key"
      -d '{"product_name":"Caramel Syrup","category":"SYRUPS","price":420,"quantity":10}'
 curl "http://localhost:8000/api/holidays?start=2026-12-01&amp;end=2026-12-31" -H "X-API-Key: butfirst-dev-key"</code></pre>
     </div>
+</div>
 </div>

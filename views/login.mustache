@@ -1,40 +1,50 @@
-{{!
-    C# Form1 "Login" - ClientSize 1080 x 687, white background.
-    All positions/sizes below are the exact values from Form1.Designer.cs.
-}}
-<div class="win" id="login-window" style="width:1080px;" data-window-kind="login">
-    {{> titlebar}}
-    <div class="client" style="width:1080px;height:687px;background:#fff;">
-
-        <!-- pictureBox1 -->
-        <div class="wf-picture" style="left:74px;top:144px;width:330px;height:630px;background:#B4B4B4;">
-            <img src="/assets/img/login-art.png" alt="" style="position:absolute;left:0;top:0;">
+{{! Login (C# Form1): same accounts, validation and messages. }}
+<div class="login">
+    <aside class="login-art">
+        <a class="brand" href="/login">
+            <img src="/assets/img/logo.png" alt="">
+            <span class="brand-name"><strong>BUT FIRST</strong><span>System</span></span>
+        </a>
+        <img class="arch" src="/assets/img/login-art.png" alt="But First Coffee café interior">
+        <div>
+            <blockquote>Inventory, schedules and payroll — <span>but first, coffee.</span></blockquote>
+            <small>But First Coffee Floridablanca · JAMM Bldg, Brgy Solib, Pampanga</small>
         </div>
+    </aside>
 
-        <!-- panel1 (black header) -->
-        <div class="wf-box" style="left:0;top:0;width:1084px;height:78px;background:#000;">
-            <img src="/assets/img/logo.png" alt="" class="wf-abs" style="left:38px;top:14px;width:47px;height:53px;object-fit:none;object-position:left top;">
-            <span class="wf-label" style="left:83px;top:22px;color:#fff;font:800 21.75pt Figtree,sans-serif;">BUT FIRST, SYSTEM</span>
-        </div>
-
-        <form id="login-form" method="post" action="/login" autocomplete="off" novalidate>
+    <main class="login-panel">
+        <form id="login-form" class="login-card" method="post" action="/login" autocomplete="off" novalidate>
             <input type="hidden" name="_token" value="{{csrfToken}}">
+            <p class="eyebrow">Staff portal</p>
+            <h1>Welcome back</h1>
+            <p class="sub">Sign in to manage the shop's stock, shifts and payroll.</p>
 
-            <span class="wf-label" style="left:524px;top:196px;background:#fff;font:800 36pt Figtree,sans-serif;">Login</span>
+            <div class="field">
+                <label for="txtUser">User / Employee ID</label>
+                <input class="input" id="txtUser" name="username" value="{{username}}" autocomplete="username" autofocus>
+            </div>
+            <div class="field">
+                <label for="txtPassword">Password</label>
+                <div class="pw-wrap">
+                    <input class="input" id="txtPassword" name="password" type="password" autocomplete="current-password">
+                    <button type="button" class="icon-btn" id="btnTogglePw" aria-label="Show password">
+                        <svg class="ico" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
+            </div>
 
-            <label class="wf-label" for="txtUser" style="left:529px;top:283px;font:400 14.25pt Figtree,sans-serif;">User / Employee ID:</label>
-            <input class="wf-text" id="txtUser" name="username" value="{{username}}" style="left:534px;top:318px;width:409px;height:40px;font-size:20.25pt;" autofocus>
-
-            <label class="wf-label" for="txtPassword" style="left:529px;top:379px;font:400 14.25pt Figtree,sans-serif;">Password:</label>
-            <input class="wf-text" id="txtPassword" name="password" type="password" style="left:534px;top:418px;width:409px;height:40px;font-size:20.25pt;">
-
-            <button type="submit" class="wf-btn flat" id="btnLogin" style="left:535px;top:493px;width:198px;height:50px;font:800 20.25pt Figtree,sans-serif;">Login</button>
-            <button type="button" class="wf-btn flat" id="btnExit" style="left:745px;top:493px;width:198px;height:50px;font:800 20.25pt Figtree,sans-serif;">Exit</button>
+            <div class="login-actions">
+                <button type="submit" class="btn btn-primary" id="btnLogin">Sign in</button>
+                <button type="button" class="btn btn-outline" id="btnExit">Exit</button>
+            </div>
+            <p class="login-hint">Employee accounts can view everything but can't edit or remove products or add payroll.</p>
         </form>
-    </div>
+    </main>
 </div>
 
 <div class="closed-note" id="closed-note" hidden>
-    <p>But First System has been closed.</p>
-    <a href="/login" class="wf-btn-std">Open again</a>
+    <div>
+        <p>But First System has been closed.</p>
+        <a href="/login" class="btn btn-accent">Open again</a>
+    </div>
 </div>
