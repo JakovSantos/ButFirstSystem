@@ -1,0 +1,26 @@
+{{! C# PrintEmpPaySum_PrintPage - "EMPLOYEE PAY SUMMARY", portrait }}
+<div class="sheet portrait">
+    <div class="center company">{{company}}</div>
+    <div class="center" style="font-size:10pt;margin-top:5px;">{{address}}</div>
+    <hr class="rule" style="margin-top:20px;">
+    <div class="center title">EMPLOYEE PAY SUMMARY</div>
+    <div class="center" style="font-size:11pt;font-style:italic;">Pay Period: {{start}} - {{end}}</div>
+
+    <div style="background:#D3D3D3;border:1px solid #000;height:150px;margin-top:20px;padding:15px 20px;">
+        <div style="display:flex;height:30px;"><strong style="width:200px;font-size:12pt;">Employee Name:</strong><span style="font-size:11pt;">{{name}}</span></div>
+        <div style="display:flex;height:30px;"><strong style="width:200px;font-size:12pt;">Employee ID:</strong><span style="font-size:11pt;">{{employee_id}}</span></div>
+        <div style="display:flex;height:30px;"><strong style="width:200px;font-size:12pt;">Gross Pay:</strong><span style="font-size:11pt;">{{gross_pay}}</span></div>
+        <div style="display:flex;height:30px;"><strong style="width:200px;font-size:12pt;">Net Pay:</strong><span style="font-size:11pt;">{{net_pay}}</span></div>
+    </div>
+
+    {{#hasHolidays}}
+    <div class="holidays"><strong>Holidays in this pay period</strong> (Nager.Date API):
+        {{#holidays}}<span>{{name}} – {{display}} ({{type}}); </span>{{/holidays}}
+    </div>
+    {{/hasHolidays}}
+
+    <div class="footer" style="font-size:10pt;">
+        <div class="muted">Printed: {{printed}}</div>
+        <div style="margin-top:6px;">Prepared by: {{preparedBy}}</div>
+    </div>
+</div>

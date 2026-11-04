@@ -1,0 +1,32 @@
+{{! C# PrintDocument_PrintPage - "EMPLOYEE SHIFT SCHEDULE", landscape }}
+<div class="sheet">
+    <div class="center title">EMPLOYEE SHIFT SCHEDULE</div>
+    <div class="center" style="font-size:12pt;font-weight:bold;">Schedule Period: {{start}} to {{end}}</div>
+    <div class="center" style="font-size:10pt;margin-top:4px;">Generated: {{generated}}</div>
+    <hr class="rule">
+    <table style="border:1px solid #000;">
+        <colgroup><col style="width:16%"><col style="width:18%"><col style="width:18%"><col style="width:26%"><col style="width:16%"></colgroup>
+        <thead>
+            <tr style="background:#D3D3D3;">
+                <th style="font-size:12pt;border-right:1px solid #000;">Employee Name</th>
+                <th style="font-size:12pt;border-right:1px solid #000;">Schedule</th>
+                <th style="font-size:12pt;border-right:1px solid #000;">Breaks</th>
+                <th style="font-size:12pt;border-right:1px solid #000;">Duties</th>
+                <th style="font-size:12pt;">Day Off</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#rows}}
+            <tr style="height:50px;border:1px solid #808080;">
+                <td style="font-size:10pt;border-right:1px solid #808080;">{{names}}</td>
+                <td style="font-size:10pt;border-right:1px solid #808080;">{{schedule}}</td>
+                <td style="font-size:10pt;border-right:1px solid #808080;">{{breaks}}</td>
+                <td style="font-size:10pt;border-right:1px solid #808080;">{{duties}}</td>
+                <td style="font-size:10pt;">{{day_off}}</td>
+            </tr>
+            {{/rows}}
+        </tbody>
+    </table>
+    <div class="footer center muted" style="font-size:8pt;">This schedule is subject to change. Please check with management for updates.</div>
+</div>
+<style>tbody tr:nth-child(even) td { background: #F5F5F5; }</style>

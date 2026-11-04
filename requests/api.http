@@ -1,0 +1,98 @@
+### Ready-to-send requests for the VS Code REST Client extension.
+@base = http://localhost:8000
+@key = butfirst-dev-key
+
+### Health (no auth)
+GET {{base}}/api/health
+
+### List products
+GET {{base}}/api/products
+X-API-Key: {{key}}
+
+### Search products
+GET {{base}}/api/products?search=croissant
+X-API-Key: {{key}}
+
+### Show one product
+GET {{base}}/api/products/1
+X-API-Key: {{key}}
+
+### Missing product (404)
+GET {{base}}/api/products/999
+X-API-Key: {{key}}
+
+### Create product (201)
+POST {{base}}/api/products
+X-API-Key: {{key}}
+Content-Type: application/json
+
+{"product_name":"Caramel Syrup 750ml","category":"SYRUPS","price":420,"quantity":10,"supplier":"Monin PH"}
+
+### Invalid JSON (400)
+POST {{base}}/api/products
+X-API-Key: {{key}}
+Content-Type: application/json
+
+{oops
+
+### Invalid data (422)
+POST {{base}}/api/products
+X-API-Key: {{key}}
+Content-Type: application/json
+
+{"product_name":"","category":"PIZZA","price":"abc"}
+
+### Partial update (200)
+PUT {{base}}/api/products/1
+X-API-Key: {{key}}
+Content-Type: application/json
+
+{"quantity":45}
+
+### Delete product
+DELETE {{base}}/api/products/19
+X-API-Key: {{key}}
+
+### Payroll list
+GET {{base}}/api/payroll
+X-API-Key: {{key}}
+
+### Create payroll (totals are computed by the server)
+POST {{base}}/api/payroll
+X-API-Key: {{key}}
+Content-Type: application/json
+
+{"name":"Ana Cruz","employee_id":"F-007","days_worked":12,"ot_hours":2,"late_hours":0,"deduction_per_hour":50,"holiday_present":0,"holiday_type":"Regular","sss":450,"philhealth":250,"pagibig":200,"others":0}
+
+### Update payroll (partial, totals recomputed)
+PUT {{base}}/api/payroll/1
+X-API-Key: {{key}}
+Content-Type: application/json
+
+{"ot_hours":6}
+
+### Shift schedule
+GET {{base}}/api/shifts
+X-API-Key: {{key}}
+
+### Request a day off (409 if taken)
+PUT {{base}}/api/shifts/2/dayoff
+X-API-Key: {{key}}
+Content-Type: application/json
+
+{"day_off":"Sunday"}
+
+### Randomize shifts
+POST {{base}}/api/shifts/randomize
+X-API-Key: {{key}}
+
+### External API: PH holidays for a year (Nager.Date)
+GET {{base}}/api/holidays?year=2026
+X-API-Key: {{key}}
+
+### External API: holidays inside a payroll period
+GET {{base}}/api/holidays?start=2026-12-01&end=2026-12-31
+X-API-Key: {{key}}
+
+### Unknown API route (JSON 404)
+GET {{base}}/api/nope

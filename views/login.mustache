@@ -1,0 +1,40 @@
+{{!
+    C# Form1 "Login" - ClientSize 1080 x 687, white background.
+    All positions/sizes below are the exact values from Form1.Designer.cs.
+}}
+<div class="win" id="login-window" style="width:1080px;" data-window-kind="login">
+    {{> titlebar}}
+    <div class="client" style="width:1080px;height:687px;background:#fff;">
+
+        <!-- pictureBox1 -->
+        <div class="wf-picture" style="left:74px;top:144px;width:330px;height:630px;background:#B4B4B4;">
+            <img src="/assets/img/login-art.png" alt="" style="position:absolute;left:0;top:0;">
+        </div>
+
+        <!-- panel1 (black header) -->
+        <div class="wf-box" style="left:0;top:0;width:1084px;height:78px;background:#000;">
+            <img src="/assets/img/logo.png" alt="" class="wf-abs" style="left:38px;top:14px;width:47px;height:53px;object-fit:none;object-position:left top;">
+            <span class="wf-label" style="left:83px;top:22px;color:#fff;font:800 21.75pt Figtree,sans-serif;">BUT FIRST, SYSTEM</span>
+        </div>
+
+        <form id="login-form" method="post" action="/login" autocomplete="off" novalidate>
+            <input type="hidden" name="_token" value="{{csrfToken}}">
+
+            <span class="wf-label" style="left:524px;top:196px;background:#fff;font:800 36pt Figtree,sans-serif;">Login</span>
+
+            <label class="wf-label" for="txtUser" style="left:529px;top:283px;font:400 14.25pt Figtree,sans-serif;">User / Employee ID:</label>
+            <input class="wf-text" id="txtUser" name="username" value="{{username}}" style="left:534px;top:318px;width:409px;height:40px;font-size:20.25pt;" autofocus>
+
+            <label class="wf-label" for="txtPassword" style="left:529px;top:379px;font:400 14.25pt Figtree,sans-serif;">Password:</label>
+            <input class="wf-text" id="txtPassword" name="password" type="password" style="left:534px;top:418px;width:409px;height:40px;font-size:20.25pt;">
+
+            <button type="submit" class="wf-btn flat" id="btnLogin" style="left:535px;top:493px;width:198px;height:50px;font:800 20.25pt Figtree,sans-serif;">Login</button>
+            <button type="button" class="wf-btn flat" id="btnExit" style="left:745px;top:493px;width:198px;height:50px;font:800 20.25pt Figtree,sans-serif;">Exit</button>
+        </form>
+    </div>
+</div>
+
+<div class="closed-note" id="closed-note" hidden>
+    <p>But First System has been closed.</p>
+    <a href="/login" class="wf-btn-std">Open again</a>
+</div>
