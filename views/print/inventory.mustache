@@ -1,0 +1,18 @@
+{{! C# Inventory_PrintDocument - "INVENTORY REPORT", landscape }}
+<div class="sheet">
+    <div class="center title">INVENTORY REPORT</div>
+    <table>
+        <colgroup><col style="width:10%"><col style="width:32%"><col style="width:15%"><col style="width:12%"><col style="width:10%"><col style="width:21%"></colgroup>
+        <thead>
+            <tr style="background:#D3D3D3;outline:1px solid #000;">
+                <th style="font-size:12pt">ID</th><th style="font-size:12pt">Product</th><th style="font-size:12pt">Category</th>
+                <th style="font-size:12pt">Price</th><th style="font-size:12pt">Qty</th><th style="font-size:12pt">Supplier</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#rows}}
+            <tr><td style="font-size:10pt">{{product_id}}</td><td style="font-size:10pt">{{product_name}}</td><td style="font-size:10pt">{{category}}</td><td style="font-size:10pt">{{price}}</td><td style="font-size:10pt">{{quantity}}</td><td style="font-size:10pt">{{supplier}}</td></tr>
+            {{/rows}}
+        </tbody>
+    </table>
+</div>

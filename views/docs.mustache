@@ -1,0 +1,29 @@
+<div class="page-card">
+    <div class="page-header"><img src="/assets/img/logo.png" alt="" width="47" height="53"><span>BUT FIRST, SYSTEM — API Reference</span></div>
+    <div class="page-body">
+        <p>All responses are JSON (<code>Content-Type: application/json</code>). Authenticate with the logged-in session cookie
+           or send the header <code>X-API-Key: butfirst-dev-key</code> (change it with the <code>API_KEY</code> environment variable).
+           Write endpoints for products and payroll require the admin role.</p>
+        <p>Status codes: <code>200</code> OK · <code>201</code> Created · <code>400</code> invalid JSON · <code>401</code> not authenticated ·
+           <code>403</code> employee account · <code>404</code> not found · <code>409</code> day off taken · <code>422</code> validation failed ·
+           <code>502</code> external API unavailable.</p>
+
+        {{#groups}}
+        <h2>{{name}}</h2>
+        <table>
+            <thead><tr><th style="width:90px">Method</th><th style="width:300px">Path</th><th>Description</th><th style="width:160px">Status</th></tr></thead>
+            <tbody>
+            {{#routes}}
+                <tr><td><span class="method {{m}}">{{m}}</span></td><td><code>{{p}}</code></td><td>{{d}}</td><td>{{ok}}</td></tr>
+            {{/routes}}
+            </tbody>
+        </table>
+        {{/groups}}
+
+        <h2>Example</h2>
+        <pre><code>curl -H "X-API-Key: butfirst-dev-key" http://localhost:8000/api/products
+curl -X POST http://localhost:8000/api/products -H "X-API-Key: butfirst-dev-key" -H "Content-Type: application/json" \
+     -d '{"product_name":"Caramel Syrup","category":"SYRUPS","price":420,"quantity":10}'
+curl "http://localhost:8000/api/holidays?start=2026-12-01&amp;end=2026-12-31" -H "X-API-Key: butfirst-dev-key"</code></pre>
+    </div>
+</div>

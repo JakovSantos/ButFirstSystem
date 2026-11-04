@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>But First, System - Final Project Documentation</title>
+<style>
+    @page { size: Letter; margin: 1in; }
+    html { font-family: "Times New Roman", Times, serif; font-size: 12pt; }
+    body { margin: 0; line-height: 2; color: #000; }
+    h1, h2, h3 { font-family: "Times New Roman", Times, serif; line-height: 1.3; }
+    h1 { font-size: 16pt; text-align: center; margin: 0 0 6pt; }
+    h2 { font-size: 14pt; margin: 18pt 0 0; page-break-after: avoid; }
+    h3 { font-size: 12pt; margin: 10pt 0 0; page-break-after: avoid; }
+    p { margin: 0; text-indent: 0.5in; text-align: justify; }
+    p.noindent { text-indent: 0; }
+    ul, ol { margin: 0; padding-left: 0.5in; }
+    pre {
+        font-family: Consolas, "Courier New", monospace; font-size: 9pt; line-height: 1.25;
+        background: #f4f4f4; border: 1px solid #ccc; padding: 6pt 8pt; margin: 6pt 0 8pt;
+        white-space: pre-wrap; page-break-inside: avoid;
+    }
+    code { font-family: Consolas, "Courier New", monospace; font-size: 10.5pt; }
+    table { border-collapse: collapse; width: 100%; line-height: 1.25; font-size: 10.5pt; margin: 6pt 0 8pt; page-break-inside: avoid; }
+    th, td { border: 1px solid #000; padding: 3pt 5pt; text-align: left; vertical-align: top; }
+    th { background: #e6e6e6; }
+    figure { margin: 8pt 0; text-align: center; page-break-inside: avoid; }
+    figure img { max-width: 100%; border: 1px solid #999; }
+    figcaption { font-size: 10.5pt; line-height: 1.3; font-style: italic; margin-top: 3pt; }
+    .title-page { height: 9in; display: flex; flex-direction: column; justify-content: center; text-align: center; line-height: 1.6; page-break-after: always; }
+    .title-page .course { font-size: 14pt; }
+    .title-page .big { font-size: 22pt; font-weight: bold; margin: 18pt 0 6pt; }
+    .title-page .sub { font-size: 14pt; margin-bottom: 36pt; }
+    .page-break { page-break-before: always; }
+    .toc p { text-indent: 0; }
+    .small { font-size: 10.5pt; line-height: 1.3; }
+    .refs p { text-indent: -0.5in; padding-left: 0.5in; }
+</style>
+</head>
+<body>
+
+<!-- ================================================================== TITLE PAGE -->
+<div class="title-page">
+    <div class="course">Integrative Programming and Technologies (IPT10)<br>Final Project</div>
+    <div class="big">BUT FIRST, SYSTEM</div>
+    <div class="sub">A Custom PHP Web Framework and a Coffee-Shop Management Web Application<br>
+        (Inventory, Employee Scheduling and Payroll) Converted from a C# Windows Forms System</div>
+    <div>Submitted by:</div>
+    <div>[Team Member 1 Name]</div>
+    <div>[Team Member 2 Name]</div>
+    <div style="margin-top:24pt;">Submitted to: [Instructor Name]</div>
+    <div>Date: [Submission Date]</div>
+</div>
+
+<!-- ================================================================== ABSTRACT -->
+<h1>Abstract</h1>
+<p>This project converts <em>But First, System</em>, a C# Windows Forms application used by But First Coffee
+Floridablanca, into a PHP web application running on a framework we built ourselves. The framework follows the
+lecture module: <code>bramus/router</code> handles routing, <code>mustache/mustache</code> renders logic-less templates,
+and <code>illuminate/database</code> (Eloquent) is used standalone for persistence. On top of these packages we wrote a
+thin core (App, Router, View, Response, Request, Database, Session and Logger), a middleware layer for authentication,
+role checks, CSRF protection and request logging, and shared validation classes that serve both HTML forms and a JSON
+API. The application is a small business CMS with three modules carried over from the desktop program: product
+inventory with search, image upload, a stock summary and a top-ten chart; an employee shift generator with day-off
+requests and randomized scheduling; and payroll management that reproduces the original C# pay formula. Every screen keeps
+the exact layout, colors, fonts and coordinates of the WinForms designer. The system integrates the external Nager.Date
+public-holiday API to show Philippine holidays inside a payroll period, with caching and graceful failure. Data is stored
+in SQLite by default and MySQL/MariaDB is supported through configuration. The project includes 19 PHPUnit tests, a
+seed script, a REST client request file and printable reports.</p>
+
+<!-- ================================================================== INTRODUCTION -->
+<h2>Introduction</h2>
+<p>The IPT10 course asks students to integrate separate technologies (a routing library, a template engine, an ORM,
+a relational database and a third-party web service) into one working system, and to understand what a framework
+actually does instead of only using one. The final project therefore has two goals: build a minimal PHP framework from
+focused packages, and prove that it is usable by developing a real application on it.</p>
+<p>We chose to migrate our earlier C# desktop project because it already reflects a real business process. The C#
+version stored its data in SQL Server, used a DataGridView for every list and printed reports with
+<code>PrintDocument</code>. Moving it to the web makes it reachable from any computer in the shop, removes the need to
+install the .NET runtime, and lets several users share one database. The requirement was to keep the appearance
+identical, so users who already know the desktop program can use the web version without retraining.</p>
+<p>Building a custom framework is valuable because it exposes the pieces that full-stack frameworks such as Laravel or
+Symfony hide: the front controller, PSR-4 autoloading, route matching, middleware ordering, request/response objects and
+the database connection lifecycle. Laravel provides these through a service container, facades, Artisan, migrations and
+hundreds of classes; our framework provides the same ideas in fewer than ten short classes, each small enough to read in
+a single lecture. The trade-off is that features Laravel gives for free, such as queues, migrations with rollback and
+form-request validation, had to be written by hand or left out deliberately.</p>
+
+<!-- ================================================================== FRAMEWORK DESIGN -->
+<h2>Framework Design</h2>
+<h3>Architecture and folder structure</h3>
+<p>The framework uses the Model-View-Controller pattern with a single front controller. Folder and class names follow
+the lecture module so that the project can be compared directly with the reference source.</p>
+<table>
+    <tr><th style="width:34%">Path</th><th>Purpose</th></tr>
+    <tr><td><code>public/index.php</code></td><td>Front controller: boot, register routes, 404/500 handlers, run the router.</td></tr>
+    <tr><td><code>config/config.php</code></td><td>Plain-PHP configuration with environment-variable overrides.</td></tr>
+    <tr><td><code>src/Core/</code></td><td>App, Router, View, Response, Request, Database, Session, Logger.</td></tr>
+    <tr><td><code>src/Middleware/</code></td><td>Auth, Admin (role), CSRF and RequestLogger middleware.</td></tr>
+    <tr><td><code>src/Controllers/</code>, <code>Controllers/Api/</code></td><td>HTML controllers per tab and JSON API controllers.</td></tr>
+    <tr><td><code>src/Models/</code></td><td>Eloquent models: Product, Payroll, EmployeeShift.</td></tr>
+    <tr><td><code>src/Support/</code></td><td>Validation (ProductInput, PayrollInput), PayrollCalculator, ShiftScheduler, HolidayApi, BarChart, Format.</td></tr>
+    <tr><td><code>routes/web.php</code>, <code>routes/api.php</code></td><td>HTML routes and JSON routes with their middleware.</td></tr>
+    <tr><td><code>views/</code></td><td>Mustache layout, login, main window, print reports, error pages and partials.</td></tr>
+    <tr><td><code>database/</code>, <code>tests/</code></td><td>Seed script, MySQL schema, SQLite file; PHPUnit tests.</td></tr>
+</table>
+<p>Naming conventions are PSR-4 with the <code>App\</code> namespace mapped to <code>src/</code>, singular PascalCase
+model names, snake_case table and column names, and controller actions named after the CRUD verb
+(<code>index</code>, <code>store</code>, <code>update</code>, <code>destroy</code>).</p>
+
+<h3>Routing</h3>
+<p>Routes map a method and a URI pattern to a <code>Controller@method</code> string. Our <code>Router</code> wraps
+Bramus and turns that string into <code>[new App\Controllers\Controller(), 'method']</code>; regular-expression groups
+such as <code>(\d+)</code> are passed to the action as arguments. HTML forms only send GET and POST, so web writes use
+POST and redirect afterwards (Post/Redirect/Get), while the JSON API uses GET, POST, PUT and DELETE.</p>
+<pre>// routes/web.php (excerpt)
+Router::get('/inventory', 'InventoryController@index');
+Router::post('/inventory', 'InventoryController@store');
+Router::post('/inventory/(\d+)', 'InventoryController@update');
+Router::post('/inventory/(\d+)/delete', 'InventoryController@destroy');
+
+// src/Core/Router.php - Controller@method resolution
+[$controller, $method] = explode('@', $handler, 2);
+$class = 'App\\Controllers\\' . $controller;
+return static function (...$params) use ($class, $method): void {
+    (new $class())->{$method}(...$params);
+};</pre>
+
+<h3>Middleware</h3>
+<p>Middleware classes implement a one-method interface, <code>handle(Request $request)</code>, and are attached to URI
+patterns with <code>Router::middleware()</code>, which registers them as Bramus "before" hooks. They run in
+registration order: <code>RequestLogger</code> writes every request to <code>storage/logs/app.log</code>;
+<code>CsrfMiddleware</code> rejects form posts without the session token; <code>AuthMiddleware</code> redirects
+guests to the login page or returns JSON 401 for the API (accepting either the session or an <code>X-API-Key</code>
+header); and <code>AdminMiddleware</code> enforces the employee restrictions of the original C# login, where the Edit
+and Remove product buttons and the Add | Calculate payroll button were disabled for the employee account.</p>
+<pre>// routes/web.php - middleware registration
+Router::middleware('GET|POST|PUT|DELETE', '/.*', RequestLogger::class);
+Router::middleware('POST', '/.*', CsrfMiddleware::class);
+Router::middleware('GET|POST', '/(inventory|schedule|payroll|logout)(/.*)?', AuthMiddleware::class);
+Router::middleware('POST', '/inventory/\d+/delete', AdminMiddleware::class);
+
+// src/Middleware/AuthMiddleware.php (excerpt)
+if (Session::get('user') !== null) { return; }
+if ($request->isApi()) {
+    Response::json(['error' => 'Unauthenticated. Log in or send the X-API-Key header.'], 401);
+    exit;
+}
+Response::redirect('/login');</pre>
+
+<h3>Core classes</h3>
+<p><code>App::boot()</code> performs an explicit start-up sequence: load configuration, set the timezone, create
+storage folders, boot Eloquent through <code>Database</code>, boot Mustache through <code>View</code> and start the
+session. <code>Request</code> is an immutable wrapper around the superglobals that also decodes JSON bodies and rejects
+top-level arrays. <code>Response</code> provides <code>json()</code>, which sets the status code and header before
+printing, and <code>redirect()</code>, which exits after sending the Location header. <code>View::render()</code>
+renders a page template and injects it into a layout as <code>{{{content}}}</code>, adding shared values such as the
+CSRF token, the signed-in user and the one-shot flash message that drives the Windows-style MessageBox.</p>
+<pre>// src/Core/View.php - layout composition
+$data += self::shared();
+$content = self::$engine->loadTemplate($template)->render($data);
+return self::$engine->loadTemplate($layout)->render($data + ['content' => $content]);
+
+// src/Core/Database.php - Eloquent outside Laravel
+$capsule = new Capsule();
+$capsule->addConnection($config);
+$capsule->setAsGlobal();
+$capsule->bootEloquent();</pre>
+
+<h3>Configuration</h3>
+<p>Configuration lives in <code>config/config.php</code> as a plain PHP array, as in the module, but every value can be
+overridden with an environment variable (<code>APP_URL</code>, <code>DB_DRIVER</code>, <code>DB_HOST</code>,
+<code>DB_DATABASE</code>, <code>DB_USERNAME</code>, <code>DB_PASSWORD</code>, <code>API_KEY</code> and
+<code>HOLIDAYS_API_URL</code>). It also holds the payroll constants from the C# code (daily rate 550, eight hours per
+day, overtime multiplier 1.25), the company details printed on reports, the upload limits and the two accounts from the
+original login form, stored as password hashes. Values are read with dot notation, for example
+<code>App::config('payroll.daily_rate')</code>.</p>
+
+<!-- ================================================================== DATABASE DESIGN -->
+<h2>Database Design</h2>
+<p>The C# system used two SQL Server databases and changed the <code>EmployeeShift</code> key several times with
+ALTER scripts. For the web version we merged everything into one database with three tables, kept the original
+columns, and linked shifts to payroll records through the employee ID (for example <code>F-006</code>).</p>
+<figure>
+<svg width="640" height="250" viewBox="0 0 640 250" xmlns="http://www.w3.org/2000/svg" font-family="Times New Roman" font-size="11">
+    <g>
+        <rect x="10" y="10" width="190" height="230" fill="#fff" stroke="#000"/><rect x="10" y="10" width="190" height="22" fill="#000"/>
+        <text x="105" y="25" fill="#fff" text-anchor="middle" font-weight="bold">inventory</text>
+        <text x="18" y="48">PK product_id INT</text><text x="18" y="66">product_name VARCHAR(100)</text>
+        <text x="18" y="84">category VARCHAR(50)</text><text x="18" y="102">price DECIMAL(10,2)</text>
+        <text x="18" y="120">quantity INT</text><text x="18" y="138">supplier VARCHAR(100)</text>
+        <text x="18" y="156">date_added DATE</text><text x="18" y="174">image_path VARCHAR(255)</text>
+        <text x="18" y="192">created_at, updated_at</text>
+    </g>
+    <g>
+        <rect x="225" y="10" width="190" height="230" fill="#fff" stroke="#000"/><rect x="225" y="10" width="190" height="22" fill="#000"/>
+        <text x="320" y="25" fill="#fff" text-anchor="middle" font-weight="bold">payroll</text>
+        <text x="233" y="48">PK id INT</text><text x="233" y="64">UQ employee_id VARCHAR(50)</text>
+        <text x="233" y="80">name VARCHAR(100)</text><text x="233" y="96">days_worked, ot_hours INT</text>
+        <text x="233" y="112">late_hours, holiday_present INT</text><text x="233" y="128">deduction_per_hour DECIMAL</text>
+        <text x="233" y="144">holiday_type VARCHAR(50)</text><text x="233" y="160">gross_pay, net_pay DECIMAL</text>
+        <text x="233" y="176">total_deductions DECIMAL</text><text x="233" y="192">sss, philhealth, pagibig, others</text>
+        <text x="233" y="208">created_at, updated_at</text>
+    </g>
+    <g>
+        <rect x="440" y="10" width="190" height="230" fill="#fff" stroke="#000"/><rect x="440" y="10" width="190" height="22" fill="#000"/>
+        <text x="535" y="25" fill="#fff" text-anchor="middle" font-weight="bold">employee_shift</text>
+        <text x="448" y="48">PK id INT</text><text x="448" y="64">FK payroll_employee_id VARCHAR(50)</text>
+        <text x="448" y="80">names VARCHAR(100)</text><text x="448" y="96">schedule VARCHAR(100)</text>
+        <text x="448" y="112">breaks VARCHAR(100)</text><text x="448" y="128">duties VARCHAR(200)</text>
+        <text x="448" y="144">day_off VARCHAR(20)</text><text x="448" y="160">created_at, updated_at</text>
+    </g>
+    <line x1="415" y1="60" x2="440" y2="60" stroke="#000"/>
+    <text x="418" y="55" font-size="10">1</text><text x="428" y="74" font-size="10">0..1</text>
+</svg>
+<figcaption>Figure 1. Entity-relationship diagram. One payroll record has at most one shift row; inventory is independent.</figcaption>
+</figure>
+<p>The foreign key uses <code>ON DELETE SET NULL</code> so that removing a payroll record never deletes a schedule
+row, and <code>ON UPDATE CASCADE</code> so that changing an employee ID keeps the link. Tables are created by
+<code>database/seed.php</code> with Eloquent's schema builder, which works on both SQLite and MySQL, and an equivalent
+hand-written script is provided in <code>database/schema.sql</code> for phpMyAdmin or the MySQL console.</p>
+<pre>// database/seed.php (excerpt)
+$schema->create('employee_shift', static function (Blueprint $t): void {
+    $t->increments('id');
+    $t->string('payroll_employee_id', 50)->nullable();
+    $t->string('names', 100);
+    $t->string('schedule', 100)->nullable();
+    $t->string('day_off', 20)->nullable();
+    $t->timestamps();
+    $t->foreign('payroll_employee_id')->references('employee_id')->on('payroll')
+      ->nullOnDelete()->cascadeOnUpdate();
+});</pre>
+<p>The connection is configured in <code>config/config.php</code>. By default the driver is SQLite with the file
+<code>database/database.sqlite</code>, so the project runs without a database server. For XAMPP, set
+<code>DB_DRIVER=mysql</code>, host <code>127.0.0.1</code>, port <code>3306</code>, database
+<code>butfirstsystemdb</code>, username <code>root</code> and an empty password, then run
+<code>composer db:seed</code>.</p>
+
+<!-- ================================================================== WEB APP -->
+<h2>Web Application Development</h2>
+<p>The application is a content-management system for a coffee shop. It reproduces the two C# forms: the Login form
+(<code>Form1</code>) and the main window (<code>Form2</code>) with its three tabs. To keep the appearance exact, each
+control is absolutely positioned with the left, top, width and height values copied from
+<code>Form1.Designer.cs</code> and <code>Form2.Designer.cs</code>, and font sizes are given in points (11.25 pt Figtree,
+Figtree ExtraBold headings), exactly as in the designer. A stylesheet recreates the WinForms controls: black flat
+buttons, popup buttons, FixedSingle panels, NumericUpDown spinners, the FlatButtons tab strip, and DataGridView grids
+with black headers, a row-header column with the current-row arrow, NavajoWhite selection and the empty "new row"
+marked with an asterisk. C# <code>MessageBox.Show</code> calls became an identical HTML dialog fed by session flash
+messages, so the wording, captions and icons of every message are unchanged.</p>
+<figure><img src="screenshots/01-login.png" style="width:70%" alt="Login screen">
+<figcaption>Figure 2. Login form (C# Form1) rendered by the PHP application.</figcaption></figure>
+<p><strong>Authentication.</strong> Users sign in with the two accounts of the original system (admin and employee).
+Usernames are case-insensitive and passwords are verified with <code>password_verify</code>; the session ID is
+regenerated after login. Employees see the Edit, Remove and Add | Calculate buttons disabled, and the same routes are
+blocked on the server by <code>AdminMiddleware</code>.</p>
+<p><strong>Inventory.</strong> Products are listed in a grid with live search over ID, name, category and supplier.
+Clicking a row fills and locks the Product Information panel; Edit unlocks the fields and changes Add to Update;
+Remove asks for confirmation. Images are uploaded through Browse Image and stored in <code>public/uploads</code>
+after extension, size and content checks. The Summary panel shows the most and least stocked products and the total
+inventory value, and a server-generated SVG reproduces the MS Chart "Top 10 Most Stocked Products" bar chart.</p>
+<figure><img src="screenshots/02-inventory.png" style="width:92%" alt="Inventory tab">
+<figcaption>Figure 3. INVENTORY tab with the product grid, summary and stock chart.</figcaption></figure>
+<p><strong>Employee schedule.</strong> Selecting a row shows the employee's schedule, break and duties. A day off can
+be requested only if no other employee already has that day; Reset Dayoff clears all requests after confirmation, and
+Randomize Shift Schedule shuffles employees over the existing shift slots in one database transaction.</p>
+<p><strong>Payroll.</strong> The Payroll Management tab keeps the C# formula in <code>PayrollCalculator</code>:
+basic pay is days worked times 550, holiday pay adds 550 per holiday, overtime is paid at 1.25 times the hourly rate,
+and deductions are SSS, PhilHealth, Pag-IBIG, others and late hours times the deduction per hour. Add | Calculate
+inserts or updates by employee ID, Edit and Update follow the original edit mode, and the Employee Pay Summary panel
+updates as soon as a row is selected. All print buttons open printable pages that copy the layout of the C#
+<code>PrintDocument</code> reports, including the company header and the "Prepared by" footer.</p>
+<figure><img src="screenshots/04-payroll.png" style="width:92%" alt="Payroll tab">
+<figcaption>Figure 4. PAYROLL MANAGEMENT tab after selecting an employee.</figcaption></figure>
+<p>Each feature uses the framework in the same way: a route points to a controller action, middleware checks the
+session and role, a shared input class validates and normalizes the data, an Eloquent model reads or writes the
+row, and the action either renders a Mustache template or redirects with a flash message.</p>
+
+<!-- ================================================================== API INTEGRATION -->
+<h2>API Integration</h2>
+<p><strong>Purpose.</strong> Payroll in the Philippines depends on regular and special holidays, but the C# program
+expected the user to know them. We integrated the Nager.Date public-holiday API so the system can show which
+Philippine holidays fall inside the selected payroll period. The result appears in the status strip of the main
+window and on the payroll printouts, and public holidays are labeled "Regular" while other types are labeled
+"Special" to match the Holiday Type field.</p>
+<p><strong>Endpoint and format.</strong> The service is called with
+<code>GET https://date.nager.at/api/v3/PublicHolidays/{year}/PH</code> and returns a JSON array of objects with
+<code>date</code>, <code>localName</code>, <code>name</code> and <code>types</code>. Our application exposes it through
+its own endpoint, <code>GET /api/holidays?start=YYYY-MM-DD&amp;end=YYYY-MM-DD</code> (or <code>?year=</code>), so the
+browser never calls the third party directly.</p>
+<p><strong>Authentication.</strong> Nager.Date is a public API and needs no key. Our own API, including the
+holiday proxy, requires the logged-in session or the <code>X-API-Key</code> header, configured with the
+<code>API_KEY</code> environment variable.</p>
+<p><strong>Errors and rate limits.</strong> Responses are cached on disk for one day per year and country, which
+keeps the number of requests very low and makes pages fast. cURL uses an eight-second timeout. If the network fails,
+the HTTP status is not 200 or the JSON is invalid, the error is logged, a stale cache is used when available, and
+otherwise the endpoint answers 502 with a message while the rest of the page keeps working.</p>
+<pre>// src/Support/HolidayApi.php (excerpt)
+if (is_file($cacheFile) &amp;&amp; (time() - filemtime($cacheFile)) &lt; $this->cacheTtl) {
+    $this->source = 'cache';
+    return $this->normalize(json_decode((string) file_get_contents($cacheFile), true) ?: []);
+}
+$url = sprintf('%s/PublicHolidays/%d/%s', $this->baseUrl, $year, $this->country);
+[$status, $body, $error] = $this->get($url);          // cURL, 8 s timeout
+if ($error !== null || $status !== 200) {
+    $this->lastError = $error ?? "Holiday API responded with HTTP {$status}.";
+    Logger::error('HolidayApi: ' . $this->lastError);
+    if (is_file($cacheFile)) { return $this->normalize(...); }   // stale cache fallback
+    return [];
+}
+file_put_contents($cacheFile, $body, LOCK_EX);</pre>
+<p>Besides consuming an external API, the project provides its own JSON API for products, payroll and shifts
+(documented at <code>/docs</code>), following the module's status codes: 200, 201, 400 for invalid JSON, 401, 403,
+404, 409 for a day off that is already taken, 422 for validation errors and 502 for an unavailable external service.</p>
+
+<!-- ================================================================== TESTING -->
+<h2>Testing and Debugging</h2>
+<p><strong>Unit tests.</strong> We used PHPUnit 10. The suite has 19 tests and 38 assertions in three classes:
+<code>PayrollCalculatorTest</code> checks that the PHP calculator returns the same values as the C# method (for
+example 13 days, 4 OT hours, 1 late hour and one holiday give a net pay of 7,093.75);
+<code>InputValidationTest</code> checks required fields, decimal prices, the 0 to 1000 quantity range and the exact
+C# error messages; and <code>SupportTest</code> checks peso and .NET date formatting, chart output and escaping, and
+the holiday client's cache, type mapping and failure handling without using the network. The suite runs with
+<code>composer test</code>.</p>
+<p><strong>Manual testing.</strong> Every button of the three tabs was tested in the browser with the admin and
+employee accounts, and the API was tested with curl and the requests in <code>requests/api.http</code>, covering
+success, 400, 401, 403, 404, 409 and 422 responses, missing CSRF tokens and the HTML and JSON 404 pages.</p>
+<p><strong>Issues and solutions.</strong> The original SQL scripts contradicted the C# code (the code used
+<code>NetPay</code>, <code>LateHours</code> and <code>PayrollEmployeeID</code> columns that the scripts never created),
+so the schema was rebuilt from what the code actually reads and writes. WinForms <code>ReadOnly</code> state and
+disabled controls do not exist on HTML forms in the same way, because disabled inputs are not submitted, so the
+script re-enables them just before submitting. A disabled DataGridView row selection behaved differently from HTML
+tables, so a small grid component now tracks the current row and selected cell. The original randomizer deleted all
+shift rows and lost the link to payroll; the PHP version shuffles employees together with their employee ID inside a
+transaction. Finally, the C# grid labelled the net-pay column "Basic Pay"; the web grid shows "Net Pay" so the
+numbers are not misread.</p>
+
+<!-- ================================================================== PRESENTATION -->
+<h2>Presentation Plan</h2>
+<p>The recorded presentation will run for 10 to 15 minutes in MP4 format at 720p or higher, following the required
+structure: project overview and the original C# system (2-3 minutes); framework design with the folder structure,
+routing, middleware and request lifecycle (3-4 minutes); a live demonstration of login, the three tabs, the
+employee restrictions, printing, the JSON API and the holiday API (4-5 minutes); the database design and the
+challenges described above (1-2 minutes); and conclusion and future work (1 minute). The recording link will be
+submitted through the course LMS together with this PDF.</p>
+
+<h2>Conclusion and Future Work</h2>
+<p>The project shows that three focused packages and a few hundred lines of glue code are enough to build a usable
+MVC framework, and that this framework can carry a real business application. The web version keeps the exact look
+of the desktop program while adding a JSON API, role-based middleware, CSRF protection, an external holiday service
+and automated tests. Future work includes user management stored in the database instead of fixed accounts, database
+migrations with rollback, automatic holiday pay rates based on the holiday type, export of reports to PDF and Excel as
+the original Office Interop reference intended, and pagination for large inventories.</p>
+
+<!-- ================================================================== REFERENCES -->
+<h2 class="page-break">References</h2>
+<div class="refs">
+<p>Bramus, B. (2024). <em>bramus/router: A lightweight and simple object oriented PHP Router</em>. GitHub. https://github.com/bramus/router</p>
+<p>Laravel. (2025). <em>illuminate/database: The Illuminate Database package</em>. https://github.com/illuminate/database</p>
+<p>Mustache. (2023). <em>mustache.php: A Mustache implementation in PHP</em>. https://github.com/bobthecow/mustache.php</p>
+<p>Nager.Date. (2026). <em>Public Holiday API v3</em>. https://date.nager.at/Api</p>
+<p>PHP Framework Interop Group. (2016). <em>PSR-4: Autoloader</em>. https://www.php-fig.org/psr/psr-4/</p>
+<p>Bergmann, S. (2025). <em>PHPUnit 10 manual</em>. https://docs.phpunit.de/en/10.5/</p>
+<p>IPT10 Course Module. (2026). <em>Build your own PHP framework: Routing, logic-less templates, and Eloquent CRUD</em>.</p>
+</div>
+
+<!-- ================================================================== APPENDIX -->
+<h2>Appendix: Source Code</h2>
+<p class="noindent">Full source code (framework and application): [Repository link or USB drive label].</p>
+<pre>ButFirstSystem-PHP/
+  composer.json  phpunit.xml  README.md
+  config/config.php
+  public/index.php  public/assets/css/winforms.css  public/assets/js/app.js  public/uploads/
+  routes/web.php  routes/api.php
+  src/Core/        App.php Router.php View.php Response.php Request.php Database.php Session.php Logger.php
+  src/Middleware/  Middleware.php AuthMiddleware.php AdminMiddleware.php CsrfMiddleware.php RequestLogger.php
+  src/Controllers/ AuthController.php InventoryController.php ScheduleController.php PayrollController.php DocsController.php
+  src/Controllers/Api/ ProductController.php PayrollController.php ShiftController.php HolidayController.php
+  src/Models/      Product.php Payroll.php EmployeeShift.php
+  src/Support/     ProductInput.php PayrollInput.php PayrollCalculator.php ShiftScheduler.php HolidayApi.php
+                   BarChart.php Format.php ImageUpload.php MainWindow.php
+  views/           layout, login, main, docs, partials/, print/, errors/
+  database/        seed.php schema.sql database.sqlite
+  tests/           PayrollCalculatorTest.php InputValidationTest.php SupportTest.php
+  requests/api.http</pre>
+<p class="noindent small">Run: <code>composer install</code>, <code>composer db:seed</code>, <code>composer serve</code>,
+then open http://localhost:8000 and sign in with admin / admin123 or employee / employee123.</p>
+
+</body>
+</html>

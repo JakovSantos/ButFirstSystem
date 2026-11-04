@@ -1,0 +1,41 @@
+{{! C# Payroll_PrintDocument - "PAYROLL REPORT", landscape }}
+<div class="sheet">
+    <div class="center company">{{company}}</div>
+    <div class="center address">{{address}}</div>
+    <hr class="rule">
+    <div class="center title">PAYROLL REPORT</div>
+    <div class="center period">Pay Period: {{start}} - {{end}}</div>
+    <div class="center period muted" style="margin-top:3px;">Generated: {{generated}}</div>
+
+    <table style="border:1px solid #000;">
+        <colgroup><col style="width:20%"><col style="width:12%"><col style="width:9%"><col style="width:9%"><col style="width:9%"><col style="width:13%"><col style="width:13%"><col style="width:15%"></colgroup>
+        <thead>
+            <tr style="background:#A9A9A9;color:#fff;">
+                <th>Employee Name</th><th style="border-left:1px solid #fff">Emp ID</th><th style="border-left:1px solid #fff">Days</th>
+                <th style="border-left:1px solid #fff">OT Hrs</th><th style="border-left:1px solid #fff">Late Hrs</th>
+                <th style="border-left:1px solid #fff">Gross Pay</th><th style="border-left:1px solid #fff">Net Pay</th><th style="border-left:1px solid #fff">Deductions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#rows}}
+            <tr style="border:1px solid #D3D3D3;">
+                <td>{{name}}</td><td>{{employee_id}}</td><td>{{days_worked}}</td><td>{{ot_hours}}</td><td>{{late_hours}}</td>
+                <td>{{gross_pay}}</td><td>{{net_pay}}</td><td>{{total_deductions}}</td>
+            </tr>
+            {{/rows}}
+        </tbody>
+    </table>
+
+    {{#hasHolidays}}
+    <div class="holidays"><strong>Holidays in this pay period</strong> (Nager.Date API):
+        {{#holidays}}<span>{{name}} – {{display}} ({{type}}); </span>{{/holidays}}
+    </div>
+    {{/hasHolidays}}
+
+    <div class="footer">
+        <div>Total Employees: {{count}}</div>
+        <hr style="border:0;border-top:1px solid #808080;margin:6px 0 8px;">
+        <div>Prepared by: {{preparedBy}}</div>
+    </div>
+</div>
+<style>tbody tr:nth-child(even) td { background: #F5F5F5; }</style>

@@ -1,0 +1,14 @@
+<!-- Windows MessageBox replica (C# MessageBox.Show). Driven by MsgBox in app.js. -->
+<div id="msgbox-overlay" class="msgbox-overlay" hidden>
+    <div class="msgbox" role="dialog" aria-modal="true" aria-labelledby="msgbox-caption">
+        <div class="msgbox-title">
+            <span id="msgbox-caption" class="msgbox-caption">Message</span>
+            <button type="button" class="msgbox-close" data-msgbox="close" aria-label="Close">&#x2715;</button>
+        </div>
+        <div class="msgbox-body">
+            <span id="msgbox-icon" class="msgbox-icon"></span>
+            <div id="msgbox-text" class="msgbox-text"></div>
+        </div>
+        <div class="msgbox-buttons" id="msgbox-buttons"></div>
+    </div>
+</div>
