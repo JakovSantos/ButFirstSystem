@@ -23,12 +23,31 @@ and toasts. It works on desktop, tablet and phone.
 
 ```bash
 composer install
-composer db:seed      # creates database/database.sqlite with sample data
+composer db:seed      # creates database/database.sqlite with sample data (wipes existing data)
 composer serve        # http://localhost:8000
 ```
 
-Log in with **admin / admin123** (full access) or **employee / employee123** (Edit/Remove product and
-Add | Calculate payroll are disabled, like the C# login).
+Already have data? `composer db:migrate` upgrades the database in place (adds the per-employee
+daily rate and the `users` table with login accounts) without deleting anything.
+
+### Accounts
+
+| Who | Username | Password | Access |
+|---|---|---|---|
+| Admin | `admin` | `admin123` | Everything: edit products, payroll, daily rates and employee names |
+| Employee | their Employee ID, e.g. `F-001` | `employee123` | Views inventory and the schedule, requests days off, sees **only their own payroll** |
+
+Accounts are stored in the `users` table. A login is created automatically when the admin adds a new
+employee to payroll. Defaults can be changed with `ADMIN_PASSWORD` / `EMPLOYEE_DEFAULT_PASSWORD`
+before running `db:seed` or `db:migrate`.
+
+### Employee names and pay
+
+- **Rename an employee** (admin): Employee schedule → select the employee → edit the name → *Save name*,
+  or Payroll → *Edit* → change the name → *Update*. The new name shows on the roster, day-off board,
+  payroll and printouts.
+- **Daily rate** (admin): each employee has their own daily rate (default ₱550). Payroll → *Edit* →
+  *Daily rate* → *Update*. Basic pay, holiday pay and overtime are all calculated from it.
 
 | URL | What |
 |---|---|

@@ -18,6 +18,7 @@
         var n = Number(v) || 0;
         return (n < 0 ? '-₱' : '₱') + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
+    function on(sel, evt, fn) { var el = $(sel); if (el) { el.addEventListener(evt, fn); } return el; }
     function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
 
     var ICONS = {
@@ -462,8 +463,12 @@
         duties: $('#txtDuties'), dayoff: $('#cmbDayoff'), start: $('#dtStartDate'), end: $('#dtEndDate')
     };
 
+    var btnSaveName = $('#btnSaveName');
+    var selectedShift = null;
     var shiftGrid = Grid($('#shiftGrid'), function (row) { // shiftGrid_CellClick
         if (!row) { return; }
+        selectedShift = row;
+        if (btnSaveName) { btnSaveName.disabled = true; }
         sch.employee.value = row.names;
         sch.schedule.value = row.schedule;
         sch.brk.value = row.breaks;
@@ -483,9 +488,41 @@
     }
     syncPeriodInputs();
 
+    // Rename (admin): the new name is saved on the schedule and the linked payroll record.
+    if (btnSaveName) {
+        sch.employee.addEventListener('input', function () {
+            btnSaveName.disabled = !selectedShift || sch.employee.value.trim() === '' ||
+                sch.employee.value.trim() === selectedShift.names;
+        });
+        sch.employee.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); if (!btnSaveName.disabled) { btnSaveName.click(); } }
+        });
+        btnSaveName.addEventListener('click', function () {
+            var name = sch.employee.value.trim().replace(/\s+/g, ' ');
+            if (!selectedShift) {
+                MsgBox.show('Please select an employee from the grid.', 'Validation Error', 'warning');
+                return;
+            }
+            if (name === '') {
+                markInvalid(sch.employee);
+                MsgBox.show('Please enter a name.', 'Validation Error', 'warning');
+                return;
+            }
+            MsgBox.show('Rename ' + selectedShift.names + ' to ' + name + '?\nThe new name will show on the schedule, payroll and printouts.',
+                'Rename Employee', 'question', ['Rename', 'Cancel']).then(function (r) {
+                if (r !== 'Rename') { return; }
+                var f = $('#rename-form');
+                f.action = '/schedule/' + selectedShift.id + '/name';
+                $('#hidNewName').value = name;
+                syncPeriodInputs();
+                f.submit();
+            });
+        });
+    }
+
     // Request (btnRequest_Click)
     $('#dayoff-form').addEventListener('submit', function (e) {
-        if (sch.employee.value.trim() === '') {
+        if (!selectedShift || sch.employee.value.trim() === '') {
             e.preventDefault();
             MsgBox.show('Please select an employee from the grid.', 'Validation Error', 'warning');
             return;
@@ -495,7 +532,7 @@
             MsgBox.show('Please select a day off from the dropdown.', 'Validation Error', 'warning');
             return;
         }
-        $('#hidDayoffName').value = sch.employee.value.trim();
+        $('#hidDayoffName').value = selectedShift.names; // the saved name, even if the box was edited
         syncPeriodInputs();
     });
 
@@ -523,7 +560,7 @@
        ================================================================= */
     var pay = {
         form: $('#payroll-form'),
-        name: $('#txtEmployeeName'), empId: $('#txtEmployeeID'),
+        name: $('#txtEmployeeName'), empId: $('#txtEmployeeID'), rate: $('#txtDailyRate'),
         days: $('#udDaysWorked'), ot: $('#udOTHours'), late: $('#udLate'), hol: $('#udHolidaysWork'),
         holType: $('#cmbHolidayType'),
         ded: $('#txtDeductionPerHour'), sss: $('#txtSSS'), ph: $('#txtPhilhealth'), pi: $('#txtPagibig'), oth: $('#txtOthers'),
@@ -544,7 +581,7 @@
 
     function fillPayroll(row) {
         pay.selectedId = row.id;
-        pay.name.value = row.name; pay.empId.value = row.employee_id;
+        pay.name.value = row.name; pay.empId.value = row.employee_id; pay.rate.value = row.daily_rate;
         pay.days.value = row.days_worked; pay.ot.value = row.ot_hours; pay.late.value = row.late_hours;
         pay.hol.value = row.holiday_present; pay.holType.value = row.holiday_type || '';
         pay.ded.value = row.deduction_per_hour; pay.sss.value = row.sss; pay.ph.value = row.philhealth;
@@ -558,13 +595,15 @@
         sch.dayoff.value = shift ? (shift.day_off || '') : '';
     }
     function setPayrollReadOnly(ro) { // SetPayrollFieldsReadOnly
-        [pay.name, pay.empId, pay.ded, pay.sss, pay.ph, pay.pi, pay.oth].forEach(function (i) { i.readOnly = ro; });
+        if (role !== 'admin') { ro = true; } // employees can only view their payroll
+        [pay.name, pay.empId, pay.rate, pay.ded, pay.sss, pay.ph, pay.pi, pay.oth].forEach(function (i) { i.readOnly = ro; });
         [pay.days, pay.ot, pay.late, pay.hol].forEach(function (i) { setNumEnabled(i, !ro); });
         pay.holType.disabled = ro;
     }
     function calculatePayroll() { // CalculatePayroll
-        var dailyRate = 550, hourlyRate = dailyRate / 8;
         var num = function (el) { return isNumber(el.value) ? Number(el.value) : 0; };
+        var dailyRate = num(pay.rate) > 0 ? num(pay.rate) : Number(pay.rate.getAttribute('data-default')) || 550;
+        var hourlyRate = dailyRate / 8;
         var basicPay = num(pay.days) * dailyRate;
         var holidayExtraPay = num(pay.hol) * dailyRate;
         var otPay = num(pay.ot) * (hourlyRate * 1.25);
@@ -573,8 +612,8 @@
         var grossPay = basicPay;
         var netPay = grossPay + holidayExtraPay + otPay - totalDeductions;
         $('#lbEmployeeName').textContent = pay.name.value.trim() || 'New employee';
-        $('#lbEmployeeID').textContent = (pay.empId.value.trim() ? 'Employee ID ' + pay.empId.value.trim() + ' · ' : '') +
-            'OT ' + peso(otPay) + ' · Holiday ' + peso(holidayExtraPay);
+        $('#lbEmployeeID').textContent = (pay.empId.value.trim() ? pay.empId.value.trim() + ' · ' : '') +
+            peso(dailyRate) + '/day · OT ' + peso(otPay) + ' · Holiday ' + peso(holidayExtraPay);
         $('#lbGrossPay').textContent = peso(grossPay);
         $('#lbTotalDeductions').textContent = peso(totalDeductions);
         $('#lbNetPay').textContent = peso(netPay);
@@ -589,6 +628,11 @@
         if (pay.name.value.trim() === '' || pay.empId.value.trim() === '') {
             [pay.name, pay.empId].forEach(function (i) { if (i.value.trim() === '') { markInvalid(i); } });
             MsgBox.show('Employee Name and ID are required.', 'Input Error', 'warning');
+            return false;
+        }
+        if (!isNumber(pay.rate.value) || Number(pay.rate.value) <= 0) {
+            markInvalid(pay.rate);
+            MsgBox.show('Daily rate must be a number greater than 0.', 'Input Error', 'warning');
             return false;
         }
         var bad = [pay.ded, pay.sss, pay.ph, pay.pi, pay.oth].filter(function (i) { return !isNumber(i.value) || Number(i.value) < 0; });
@@ -616,7 +660,7 @@
     });
 
     // Edit (btnEditPayroll_Click)
-    $('#btnEditPayroll').addEventListener('click', function () {
+    on('#btnEditPayroll', 'click', function () {
         if (pay.empId.value.trim() === '') {
             MsgBox.show('Please select an employee from the payroll grid first.', 'No Selection', 'warning');
             return;
@@ -629,7 +673,7 @@
     });
 
     // Update (btnUpdatePayroll_Click)
-    $('#btnUpdatePayroll').addEventListener('click', function () {
+    on('#btnUpdatePayroll', 'click', function () {
         if (!pay.editMode) {
             MsgBox.show("Please click 'Edit' first to enable editing.", 'Edit Required', 'warning');
             return;
@@ -643,8 +687,8 @@
     });
 
     // Clear (btnClearPayroll_Click -> ClearPayrollFields)
-    $('#btnClearPayroll').addEventListener('click', function () {
-        pay.name.value = ''; pay.empId.value = '';
+    on('#btnClearPayroll', 'click', function () {
+        pay.name.value = ''; pay.empId.value = ''; pay.rate.value = pay.rate.getAttribute('data-default');
         [pay.days, pay.ot, pay.late, pay.hol].forEach(function (i) { i.value = '0'; });
         pay.ded.value = ''; pay.holType.value = '';
         pay.sss.value = ''; pay.ph.value = ''; pay.pi.value = ''; pay.oth.value = '';
@@ -672,7 +716,7 @@
     });
 
     // Print Payroll
-    $('#btnPrintPayroll').addEventListener('click', function () {
+    on('#btnPrintPayroll', 'click', function () {
         if (payrollGrid.count() === 0) {
             MsgBox.show('No payroll data to print.', 'No Data', 'information');
             return;
@@ -688,7 +732,14 @@
 
     // Re-select the saved employee after Add & calculate / Update (summary stays filled, as in C#)
     var paySel = state.getAttribute('data-payroll-selected');
-    if (paySel) {
+    // Employees: their own record is always shown in the summary.
+    var payOwn = state.getAttribute('data-payroll-own');
+    if (payOwn) {
+        var own = payrollGrid.find('data-employee-id', payOwn);
+        if (own) { payrollGrid.select(own, true); setMode(pay.mode, 'view', 'My record'); }
+        else { setPayrollReadOnly(true); setMode(pay.mode, 'view', 'No record yet'); }
+    }
+    if (paySel && !payOwn) {
         var ptr = payrollGrid.find('data-employee-id', paySel);
         if (ptr) { payrollGrid.select(ptr, true); ptr.scrollIntoView({ block: 'nearest' }); }
         try { history.replaceState(null, '', window.location.pathname); } catch (e) { /* ignore */ }
@@ -700,7 +751,8 @@
         pay.hol.value = p.holiday_present || 0; pay.holType.value = p.holiday_type || '';
         pay.ded.value = p.deduction_per_hour || ''; pay.sss.value = p.sss || ''; pay.ph.value = p.philhealth || '';
         pay.pi.value = p.pagibig || ''; pay.oth.value = p.others || '';
-        var pmap = { name: pay.name, employee_id: pay.empId, deduction_per_hour: pay.ded, sss: pay.sss, philhealth: pay.ph, pagibig: pay.pi, others: pay.oth };
+        pay.rate.value = p.daily_rate || pay.rate.getAttribute('data-default');
+        var pmap = { name: pay.name, employee_id: pay.empId, daily_rate: pay.rate, deduction_per_hour: pay.ded, sss: pay.sss, philhealth: pay.ph, pagibig: pay.pi, others: pay.oth };
         Object.keys(old.errors || {}).forEach(function (k) { if (pmap[k]) { markInvalid(pmap[k]); } });
         calculatePayroll();
     }

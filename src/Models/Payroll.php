@@ -16,13 +16,14 @@ final class Payroll extends Model
 
     /** @var list<string> */
     protected $fillable = [
-        'name', 'employee_id', 'days_worked', 'ot_hours', 'late_hours', 'deduction_per_hour',
+        'name', 'employee_id', 'daily_rate', 'days_worked', 'ot_hours', 'late_hours', 'deduction_per_hour',
         'holiday_present', 'holiday_type', 'net_pay', 'gross_pay', 'total_deductions',
         'sss', 'philhealth', 'pagibig', 'others',
     ];
 
     /** @var array<string, string> */
     protected $casts = [
+        'daily_rate'         => 'float',
         'days_worked'        => 'integer',
         'ot_hours'           => 'integer',
         'late_hours'         => 'integer',
@@ -38,6 +39,24 @@ final class Payroll extends Model
     ];
 
     public const HOLIDAY_TYPES = ['Regular', 'Special'];
+
+    /**
+     * Keep the employee's name the same everywhere: renaming a payroll record also
+     * renames the linked shift row (roster, day-off board, printouts).
+     */
+    public function save(array $options = []): bool
+    {
+        $renamed = $this->exists && $this->isDirty('name');
+        $saved = parent::save($options);
+
+        if ($saved && $renamed) {
+            EmployeeShift::query()
+                ->where('payroll_employee_id', $this->employee_id)
+                ->update(['names' => $this->name]);
+        }
+
+        return $saved;
+    }
 
     public function shift(): HasOne
     {

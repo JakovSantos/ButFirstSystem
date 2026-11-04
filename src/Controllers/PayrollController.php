@@ -13,6 +13,7 @@ use App\Support\Format;
 use App\Support\HolidayApi;
 use App\Support\MainWindow;
 use App\Support\PayrollCalculator;
+use App\Support\Migrator;
 use App\Support\PayrollInput;
 
 /**
@@ -36,11 +37,21 @@ final class PayrollController
         }
 
         $data = PayrollInput::normalize($input);
+        $data['daily_rate'] ??= (float) App::config('payroll.daily_rate', 550);
         $data += self::calculator()->calculate($data);
 
-        Payroll::updateOrCreate(['employee_id' => $data['employee_id']], $data);
+        // Payroll::save() also renames the linked shift row, so a renamed
+        // employee is renamed on the schedule too.
+        $payroll = Payroll::query()->firstOrNew(['employee_id' => $data['employee_id']]);
+        $isNew = ! $payroll->exists;
+        $payroll->fill($data)->save();
 
-        Session::flash('Payroll data saved successfully!', 'Success', 'information');
+        $message = 'Payroll data saved successfully!';
+        if ($isNew && Migrator::ensureEmployeeAccount($payroll->employee_id)) {
+            $message .= "\nLogin created: {$payroll->employee_id} / " . App::config('accounts.employee_password', 'employee123');
+        }
+
+        Session::flash($message, 'Success', 'information');
         Response::redirect('/payroll?' . http_build_query(['selected' => $data['employee_id']] + $this->period()));
     }
 
@@ -117,6 +128,10 @@ final class PayrollController
     public function printSummary(): void
     {
         $employeeId = trim((string) ($_GET['employee_id'] ?? ''));
+        $user = Session::get('user') ?? [];
+        if (($user['role'] ?? '') !== 'admin') {
+            $employeeId = (string) ($user['employee_id'] ?? ''); // employees can only print their own
+        }
         $payroll = $employeeId === '' ? null : Payroll::query()->where('employee_id', $employeeId)->first();
 
         if ($payroll === null) {
@@ -172,7 +187,7 @@ final class PayrollController
     private function input(): array
     {
         $fields = [
-            'name', 'employee_id', 'days_worked', 'ot_hours', 'late_hours', 'deduction_per_hour',
+            'name', 'employee_id', 'daily_rate', 'days_worked', 'ot_hours', 'late_hours', 'deduction_per_hour',
             'holiday_present', 'holiday_type', 'sss', 'philhealth', 'pagibig', 'others',
         ];
         $input = [];

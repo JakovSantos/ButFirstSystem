@@ -39,6 +39,15 @@ final class PayrollCalculatorTest extends TestCase
         self::assertSame(-450.0, $r['net_pay']);
     }
 
+    public function testPerEmployeeDailyRateOverridesDefault(): void
+    {
+        $r = (new PayrollCalculator())->calculate(['daily_rate' => 600, 'days_worked' => 10, 'ot_hours' => 2, 'holiday_present' => 1]);
+
+        // basic 10*600, holiday 600, OT 2*(600/8*1.25)=187.5
+        self::assertSame(6000.0, $r['gross_pay']);
+        self::assertSame(6787.5, $r['net_pay']);
+    }
+
     public function testRatesAreConfigurable(): void
     {
         $r = (new PayrollCalculator(600, 8, 1.3))->calculate(['days_worked' => 2, 'ot_hours' => 8]);

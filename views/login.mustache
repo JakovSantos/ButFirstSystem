@@ -1,14 +1,15 @@
-{{! Login (C# Form1): same accounts, validation and messages. }}
+{{! Login (C# Form1): same validation and messages; accounts come from the users table. }}
 <div class="login">
-    <aside class="login-art">
-        <a class="brand" href="/login">
-            <img src="/assets/img/logo.png" alt="">
-            <span class="brand-name"><strong>BUT FIRST</strong><span>System</span></span>
-        </a>
-        <img class="arch" src="/assets/img/login-art.png" alt="But First Coffee café interior">
-        <div>
-            <blockquote>Inventory, schedules and payroll — <span>but first, coffee.</span></blockquote>
-            <small>But First Coffee Floridablanca · JAMM Bldg, Brgy Solib, Pampanga</small>
+    <aside class="login-art" style="background-image:url('/assets/img/login-bg.webp')">
+        <div class="login-art-inner">
+            <a class="brand" href="/login">
+                <img src="/assets/img/logo-mark.png" alt="">
+                <span class="brand-name"><strong>BUT FIRST</strong><span>System</span></span>
+            </a>
+            <div>
+                <blockquote>Inventory, schedules and payroll — <span>but first, coffee.</span></blockquote>
+                <small>But First Coffee Floridablanca · JAMM Bldg, Brgy Solib, Pampanga</small>
+            </div>
         </div>
     </aside>
 
@@ -21,12 +22,12 @@
 
             <div class="field">
                 <label for="txtUser">User / Employee ID</label>
-                <input class="input" id="txtUser" name="username" value="{{username}}" autocomplete="username" autofocus>
+                <input class="input" id="txtUser" name="username" value="{{username}}" autocomplete="username" placeholder="admin or F-001" autofocus>
             </div>
             <div class="field">
                 <label for="txtPassword">Password</label>
                 <div class="pw-wrap">
-                    <input class="input" id="txtPassword" name="password" type="password" autocomplete="current-password">
+                    <input class="input" id="txtPassword" name="password" type="password" autocomplete="current-password" placeholder="••••••••">
                     <button type="button" class="icon-btn" id="btnTogglePw" aria-label="Show password">
                         <svg class="ico" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>
@@ -37,7 +38,7 @@
                 <button type="submit" class="btn btn-primary" id="btnLogin">Sign in</button>
                 <button type="button" class="btn btn-outline" id="btnExit">Exit</button>
             </div>
-            <p class="login-hint">Employee accounts can view everything but can't edit or remove products or add payroll.</p>
+            <p class="login-hint">Employees sign in with their Employee ID and see only their own payroll.</p>
         </form>
     </main>
 </div>

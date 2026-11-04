@@ -3,7 +3,10 @@
 <head>
     <meta charset="utf-8">
     <title>{{title}}</title>
-    <link rel="icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/img/icon-192.png">
+    <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+    <link rel="icon" href="/favicon.ico" sizes="any">
     <style>
         /* Replica of the C# PrintDocument output (Arial, landscape where the C# code sets Landscape = true). */
         @page { size: {{#portrait}}portrait{{/portrait}}{{^portrait}}landscape{{/portrait}}; margin: 1in; }

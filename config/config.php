@@ -25,23 +25,20 @@ return [
     ],
 
     // Payroll constants taken from the C# CalculatePayroll() method.
+    // daily_rate is the default for new employees; admins can change it per employee.
     'payroll' => [
         'daily_rate'    => 550,
         'hours_per_day' => 8,
         'ot_multiplier' => 1.25,
     ],
 
-    // Hard-coded accounts from the C# Login form (Form1.cs).
-    // Passwords are stored as hashes; the plain values are admin123 / employee123.
-    'users' => [
-        'admin' => [
-            'role' => 'admin',
-            'password_hash' => password_hash('admin123', PASSWORD_DEFAULT),
-        ],
-        'employee' => [
-            'role' => 'employee',
-            'password_hash' => password_hash('employee123', PASSWORD_DEFAULT),
-        ],
+    // Login accounts live in the `users` table. These are the defaults used when the
+    // accounts are first created (composer db:seed / db:migrate, or a new payroll employee).
+    // Employees sign in with their Employee ID, e.g. F-001.
+    'accounts' => [
+        'admin_username'    => $env('ADMIN_USERNAME', 'admin'),
+        'admin_password'    => $env('ADMIN_PASSWORD', 'admin123'),
+        'employee_password' => $env('EMPLOYEE_DEFAULT_PASSWORD', 'employee123'),
     ],
 
     // Database. SQLite is the default (zero setup); switch DB_DRIVER to mysql for XAMPP.

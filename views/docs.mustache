@@ -1,9 +1,10 @@
 <div class="page"><div class="card">
-    <div class="page-hero"><img src="/assets/img/logo.png" alt=""><span>BUT FIRST SYSTEM · API reference</span></div>
+    <div class="page-hero"><img src="/assets/img/logo-mark.png" alt=""><span>BUT FIRST SYSTEM · API reference</span></div>
     <div class="prose"><h1>API reference</h1>
         <p>All responses are JSON (<code>Content-Type: application/json</code>). Authenticate with the logged-in session cookie
            or send the header <code>X-API-Key: butfirst-dev-key</code> (change it with the <code>API_KEY</code> environment variable).
-           Write endpoints for products and payroll require the admin role.</p>
+           Write endpoints for products and payroll require the admin role. An employee session only sees
+           its own record in <code>/api/payroll</code>. Payroll bodies accept an optional <code>daily_rate</code> (default 550).</p>
         <p>Status codes: <code>200</code> OK · <code>201</code> Created · <code>400</code> invalid JSON · <code>401</code> not authenticated ·
            <code>403</code> employee account · <code>404</code> not found · <code>409</code> day off taken · <code>422</code> validation failed ·
            <code>502</code> external API unavailable.</p>

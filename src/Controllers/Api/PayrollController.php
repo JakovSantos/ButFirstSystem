@@ -7,6 +7,7 @@ namespace App\Controllers\Api;
 use App\Controllers\PayrollController as WebPayroll;
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\Session;
 use App\Models\Payroll;
 use App\Support\PayrollInput;
 
@@ -16,15 +17,27 @@ use App\Support\PayrollInput;
  */
 final class PayrollController
 {
+    /** Employee sessions only see their own record; admins and API-key callers see all. */
+    private function scope(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = Payroll::query()->orderBy('id');
+        $user = Session::get('user');
+        if ($user !== null && ($user['role'] ?? '') !== 'admin') {
+            $query->where('employee_id', (string) ($user['employee_id'] ?? ''));
+        }
+
+        return $query;
+    }
+
     public function index(): void
     {
-        $rows = Payroll::query()->orderBy('id')->get();
+        $rows = $this->scope()->get();
         Response::json(['data' => $rows, 'count' => $rows->count()]);
     }
 
     public function show(string $id): void
     {
-        $row = Payroll::find((int) $id);
+        $row = $this->scope()->where('id', (int) $id)->first();
         if ($row === null) {
             Response::json(['error' => 'Payroll record not found'], 404);
             return;
@@ -52,8 +65,10 @@ final class PayrollController
             return;
         }
 
+        $data['daily_rate'] ??= 550.0;
         $data += WebPayroll::calculator()->calculate($data);
         $row = Payroll::create($data);
+        \App\Support\Migrator::ensureEmployeeAccount($row->employee_id);
 
         Response::json(['data' => $row->fresh()], 201);
     }

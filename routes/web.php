@@ -24,6 +24,12 @@ Router::middleware('POST', '/inventory/\d+', AdminMiddleware::class);
 Router::middleware('POST', '/inventory/\d+/delete', AdminMiddleware::class);
 Router::middleware('POST', '/payroll', AdminMiddleware::class);
 
+// Payroll is private: employees see only their own record, so editing payroll,
+// the full payroll report and renaming employees are admin-only.
+Router::middleware('POST', '/payroll/\d+', AdminMiddleware::class);
+Router::middleware('GET', '/payroll/print', AdminMiddleware::class);
+Router::middleware('POST', '/schedule/\d+/name', AdminMiddleware::class);
+
 /*
 |--------------------------------------------------------------------------
 | Login (C# Form1)
@@ -57,6 +63,7 @@ Router::get('/schedule/print', 'ScheduleController@print');
 Router::post('/schedule/randomize', 'ScheduleController@randomize');
 Router::post('/schedule/dayoff', 'ScheduleController@requestDayOff');
 Router::post('/schedule/reset-dayoff', 'ScheduleController@resetDayOff');
+Router::post('/schedule/(\d+)/name', 'ScheduleController@rename');
 
 /*
 |--------------------------------------------------------------------------
