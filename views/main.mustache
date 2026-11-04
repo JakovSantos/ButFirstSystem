@@ -1,318 +1,440 @@
 {{!
-    C# Form2 "But First, System" - ClientSize 1238 x 778, BackColor LightGray.
-    Every left/top/width/height below is copied from Form2.Designer.cs.
-    Positions inside a tab page are relative to the tab page; inside a panel, to the panel.
-    A status strip (22px) is added at the bottom to show the external holiday API result.
+    Main window (C# Form2). All three modules are rendered on every request and the
+    sidebar switches between them, like the original TabControl. Element ids match
+    the C# control names so public/assets/js/app.js can port the event handlers 1:1.
 }}
-<div class="win" id="main-window" style="width:1238px;" data-window-kind="main" data-role="{{user.role}}">
-    {{> titlebar}}
-    <div class="client" style="width:1238px;height:800px;background:#D3D3D3;">
+<div class="app" id="main-window" data-role="{{user.role}}">
 
-        <!-- panel1 (black header) -->
-        <div class="wf-box" style="left:-3px;top:-5px;width:1234px;height:56px;background:#000;">
-            <img src="/assets/img/logo.png" alt="" class="wf-abs" style="left:24px;top:6px;width:47px;height:53px;object-fit:none;object-position:left top;">
-            <span class="wf-label" style="left:67px;top:18px;color:#fff;font:800 15.75pt Figtree,sans-serif;">BUT FIRST, SYSTEM</span>
+    <!-- ============================== Sidebar ============================== -->
+    <aside class="sidebar">
+        <a class="brand" href="/inventory">
+            <img src="/assets/img/logo.png" alt="">
+            <span class="brand-name"><strong>BUT FIRST</strong><span>System</span></span>
+        </a>
+        <nav class="nav" aria-label="Modules">
+            <div class="nav-label">Manage</div>
+            <a href="/inventory" class="nav-item{{#tabInventory}} active{{/tabInventory}}" data-tab="inventory">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/></svg>Inventory</a>
+            <a href="/schedule" class="nav-item{{#tabSchedule}} active{{/tabSchedule}}" data-tab="schedule">
+                <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Employee schedule</a>
+            <a href="/payroll" class="nav-item{{#tabPayroll}} active{{/tabPayroll}}" data-tab="payroll">
+                <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/></svg>Payroll</a>
+        </nav>
+        <div class="sidebar-foot">
+            <a class="side-link" href="/docs" target="_blank" rel="noopener">API documentation ↗</a>
+            <div class="user-chip">
+                <span class="avatar">{{userInitial}}</span>
+                <span class="who"><strong>{{user.username}}</strong><span>{{roleLabel}}</span></span>
+                <button type="button" class="icon-btn js-logout" title="Sign out" aria-label="Sign out">
+                    <svg class="ico" viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 011 1v14a1 1 0 01-1 1h-4M10 16l4-4-4-4M14 12H4"/></svg>
+                </button>
+            </div>
         </div>
+    </aside>
 
-        <!-- tabControl1 (Appearance = FlatButtons) -->
-        <div class="wf-tabs" style="left:8px;top:57px;width:1223px;height:708px;">
-            <div class="wf-tabstrip" role="tablist">
-                <a href="/inventory" role="tab" class="wf-tab{{#tabInventory}} selected{{/tabInventory}}" data-tab="inventory">INVENTORY</a>
-                <a href="/schedule" role="tab" class="wf-tab{{#tabSchedule}} selected{{/tabSchedule}}" data-tab="schedule">EMPLOYEE SCHEDULE</a>
-                <a href="/payroll" role="tab" class="wf-tab{{#tabPayroll}} selected{{/tabPayroll}}" data-tab="payroll">PAYROLL MANAGEMENT</a>
+    <!-- Mobile header + nav -->
+    <div class="mobile-shell">
+        <div class="mobile-bar">
+            <a class="brand" href="/inventory"><img src="/assets/img/logo.png" alt=""><span class="brand-name"><strong>BUT FIRST</strong><span>System</span></span></a>
+            <button type="button" class="icon-btn js-logout" aria-label="Sign out"><svg class="ico" viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 011 1v14a1 1 0 01-1 1h-4M10 16l4-4-4-4M14 12H4"/></svg></button>
+        </div>
+        <nav class="mobile-nav" aria-label="Modules">
+            <a href="/inventory" class="nav-item{{#tabInventory}} active{{/tabInventory}}" data-tab="inventory">Inventory</a>
+            <a href="/schedule" class="nav-item{{#tabSchedule}} active{{/tabSchedule}}" data-tab="schedule">Schedule</a>
+            <a href="/payroll" class="nav-item{{#tabPayroll}} active{{/tabPayroll}}" data-tab="payroll">Payroll</a>
+        </nav>
+
+    <main class="main">
+
+        <!-- =========================================================== -->
+        <!-- INVENTORY                                                    -->
+        <!-- =========================================================== -->
+        <section data-tabpage="inventory" data-title="Inventory" {{^tabInventory}}hidden{{/tabInventory}}>
+            <div class="page-head">
+                <div>
+                    <p class="eyebrow">Inventory</p>
+                    <h1>Products &amp; stock</h1>
+                    <p class="sub">Track what's on the shelf, what's running low and what it's all worth.</p>
+                </div>
+                <div class="head-actions">
+                    <button type="button" class="btn btn-outline" id="btnLoad">
+                        <svg class="ico" viewBox="0 0 24 24"><path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/></svg>Reload</button>
+                    <button type="button" class="btn btn-primary" id="btnPrintInventorySum">
+                        <svg class="ico" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H5a2 2 0 01-2-2v-4a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2h-2"/><rect x="7" y="14" width="10" height="7"/></svg>Print summary</button>
+                </div>
             </div>
 
-            <!-- =========================================================== -->
-            <!-- tabPage1  INVENTORY                                          -->
-            <!-- =========================================================== -->
-            <section class="wf-tabpage" id="tab-inventory" data-tabpage="inventory" {{^tabInventory}}hidden{{/tabInventory}}>
+            <div class="stats">
+                <div class="stat dark">
+                    <div class="stat-label">Total value</div>
+                    <div class="stat-value" id="lbTotal">{{inventory.summary.total}}</div>
+                    <div class="stat-note">{{inventory.summary.units}} units on hand</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Products</div>
+                    <div class="stat-value">{{inventory.count}}</div>
+                    <div class="stat-note">{{#inventory.search}}matching “{{inventory.search}}”{{/inventory.search}}{{^inventory.search}}in the catalogue{{/inventory.search}}</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Most stocked</div>
+                    <div class="stat-value" id="lbMostStocked" title="{{inventory.summary.most}}">{{inventory.summary.most}}</div>
+                    <div class="stat-note">{{inventory.summary.mostQty}}</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Lowest stocked</div>
+                    <div class="stat-value" id="lbLeastStocked" title="{{inventory.summary.least}}">{{inventory.summary.least}}</div>
+                    <div class="stat-note">{{inventory.summary.leastQty}}</div>
+                </div>
+            </div>
 
-                <span class="wf-label" style="left:11px;top:16px;font:400 20.25pt 'Microsoft Sans Serif',Tahoma,sans-serif;">&#x2315;</span>
-                <form id="search-form" method="get" action="/inventory" class="wf-contents">
-                    <input class="wf-text" id="txtSearch" name="search" value="{{inventory.search}}" placeholder="Search for products in the list" autocomplete="off" style="left:44px;top:19px;width:1056px;height:25px;">
-                </form>
-                <button type="button" class="wf-btn flat" id="btnClear_Inv" style="left:1106px;top:19px;width:103px;height:25px;font:800 9.75pt Figtree,sans-serif;">Clear</button>
-
-                <!-- panel2  Product Information -->
-                <form id="product-form" method="post" action="/inventory" enctype="multipart/form-data" class="wf-panel" style="left:9px;top:57px;width:300px;height:339px;" novalidate>
+            <div class="layout">
+                <!-- Product information -->
+                <form id="product-form" class="card" method="post" action="/inventory" enctype="multipart/form-data" novalidate>
                     <input type="hidden" name="_token" value="{{csrfToken}}">
                     <input type="hidden" name="image_path" id="hidImagePath" value="">
                     <input type="file" name="image" id="fileImage" accept=".jpg,.jpeg,.png,.bmp,image/jpeg,image/png,image/bmp" hidden>
 
-                    <span class="wf-label" style="left:60px;top:13px;background:#fff;font:700 14.25pt Figtree,sans-serif;">Product Information</span>
-
-                    <label class="wf-label" for="txtProductName" style="left:15px;top:45px;">Product Name:</label>
-                    <input class="wf-text" id="txtProductName" name="product_name" style="left:18px;top:66px;width:268px;height:25px;">
-
-                    <label class="wf-label" for="cmbCategory" style="left:15px;top:97px;">Category:</label>
-                    <select class="wf-combo" id="cmbCategory" name="category" style="left:18px;top:119px;width:143px;height:26px;">
-                        <option value=""></option>
-                        {{#inventory.categories}}<option value="{{value}}">{{value}}</option>{{/inventory.categories}}
-                    </select>
-
-                    <label class="wf-label" for="udQuantity" style="left:176px;top:97px;">Quantity:</label>
-                    <div class="wf-num" style="left:167px;top:120px;width:119px;height:25px;">
-                        <input id="udQuantity" name="quantity" value="0" inputmode="numeric" data-min="0" data-max="1000">
-                        <span class="wf-spin"><button type="button" tabindex="-1" data-step="1"></button><button type="button" tabindex="-1" data-step="-1"></button></span>
+                    <div class="card-head">
+                        <h2>Product information</h2>
+                        <span class="badge new" id="invMode">New product</span>
                     </div>
+                    <div class="card-body">
+                        <div class="picker" id="pboxProductImage" role="button" tabindex="0" aria-label="Browse image">
+                            <img alt="" hidden>
+                            <div class="empty">
+                                <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>
+                                <strong>Browse image</strong><span>JPG, PNG or BMP · up to 5 MB</span>
+                            </div>
+                            <span class="change">Change image</span>
+                        </div>
+                        <button type="button" id="btnBrowse" class="sr-only">Browse image</button>
+                        <input id="txtFilePath" class="sr-only" readonly tabindex="-1" aria-label="Image file path">
+                        <div class="file-path" id="filePathLabel">No image selected</div>
 
-                    <label class="wf-label" for="txtPrice" style="left:15px;top:150px;">Price:</label>
-                    <input class="wf-text" id="txtPrice" name="price" inputmode="decimal" style="left:18px;top:172px;width:143px;height:25px;">
-
-                    <label class="wf-label" for="dtDateAdded" style="left:175px;top:150px;">Date Added:</label>
-                    <input class="wf-date" type="date" id="dtDateAdded" name="date_added" value="{{today}}" style="left:167px;top:172px;width:120px;height:25px;">
-
-                    <label class="wf-label" for="txtSupplier" style="left:15px;top:202px;">Supplier:</label>
-                    <input class="wf-text" id="txtSupplier" name="supplier" style="left:18px;top:223px;width:143px;height:25px;">
-
-                    <label class="wf-label" for="txtProductID" style="left:175px;top:202px;">ID:</label>
-                    <input class="wf-text" id="txtProductID" readonly tabindex="-1" style="left:167px;top:223px;width:120px;height:25px;">
-
-                    <button type="button" class="wf-btn flat" id="btnLoad" style="left:18px;top:261px;width:54px;height:29px;">Load</button>
-                    <button type="button" class="wf-btn popup-white" id="btnUpdate" style="left:78px;top:261px;width:48px;height:29px;" {{#isEmployee}}disabled{{/isEmployee}}>Edit</button>
-                    <button type="submit" class="wf-btn flat" id="btnAdd" style="left:130px;top:261px;width:69px;height:29px;">Add</button>
-                    <button type="button" class="wf-btn popup-white" id="btnRemove" style="left:203px;top:261px;width:73px;height:29px;" {{#isEmployee}}disabled{{/isEmployee}}>Remove</button>
-                    <button type="button" class="wf-btn flat" id="btnPrintInventorySum" style="left:18px;top:296px;width:259px;height:33px;">Print Summary</button>
+                        <div class="fields" style="margin-top:16px;">
+                            <div class="field full">
+                                <label for="txtProductName">Product name</label>
+                                <input class="input" id="txtProductName" name="product_name" placeholder="e.g. BFC Iced Coffee">
+                            </div>
+                            <div class="field">
+                                <label for="cmbCategory">Category</label>
+                                <select class="select" id="cmbCategory" name="category">
+                                    <option value="">Select…</option>
+                                    {{#inventory.categories}}<option value="{{value}}">{{value}}</option>{{/inventory.categories}}
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="udQuantity">Quantity</label>
+                                <div class="stepper">
+                                    <button type="button" tabindex="-1" data-step="-1" aria-label="Decrease">−</button>
+                                    <input id="udQuantity" name="quantity" value="0" inputmode="numeric" data-min="0" data-max="1000">
+                                    <button type="button" tabindex="-1" data-step="1" aria-label="Increase">+</button>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label for="txtPrice">Price (₱)</label>
+                                <input class="input" id="txtPrice" name="price" inputmode="decimal" placeholder="0.00">
+                            </div>
+                            <div class="field">
+                                <label for="dtDateAdded">Date added</label>
+                                <input class="input" type="date" id="dtDateAdded" name="date_added" value="{{today}}">
+                            </div>
+                            <div class="field">
+                                <label for="txtSupplier">Supplier</label>
+                                <input class="input" id="txtSupplier" name="supplier" placeholder="Supplier name">
+                            </div>
+                            <div class="field">
+                                <label for="txtProductID">Product ID</label>
+                                <input class="input" id="txtProductID" readonly tabindex="-1" placeholder="Auto">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-foot">
+                        <button type="submit" class="btn btn-primary" id="btnAdd" style="flex:1">Add</button>
+                        <button type="button" class="btn btn-outline" id="btnUpdate" {{#isEmployee}}disabled title="Not available for employee accounts"{{/isEmployee}}>
+                            <svg class="ico" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>Edit</button>
+                        <button type="button" class="btn btn-danger" id="btnRemove" {{#isEmployee}}disabled title="Not available for employee accounts"{{/isEmployee}}>
+                            <svg class="ico" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Remove</button>
+                        <button type="button" class="btn btn-ghost btn-sm" id="btnNewProduct" style="width:100%">Clear form · new product</button>
+                    </div>
                 </form>
                 <form id="remove-form" method="post" action="" hidden>
                     <input type="hidden" name="_token" value="{{csrfToken}}">
                 </form>
 
-                <!-- inventoryGrid -->
-                <div class="dgv" id="inventoryGrid" data-select="cell" style="left:314px;top:57px;width:895px;height:338px;background:#fff;">
-                    <table>
-                        <colgroup><col style="width:51px"><col span="8" style="width:100px"></colgroup>
-                        <thead>
-                            <tr><th class="rh"></th><th>Product ID</th><th>Product Name</th><th>Category</th><th>Price</th><th>Quantity</th><th>Supplier</th><th>Date Added</th><th>ImagePath</th></tr>
-                        </thead>
-                        <tbody>
-                            {{#inventory.rows}}
-                            <tr data-id="{{product_id}}" data-row="{{json}}">
-                                <th class="rh"></th>
-                                <td>{{product_id}}</td><td>{{product_name}}</td><td>{{category}}</td><td>{{price_display}}</td>
-                                <td>{{quantity}}</td><td>{{supplier}}</td><td>{{date_display}}</td><td>{{image_path}}</td>
-                            </tr>
-                            {{/inventory.rows}}
-                            <tr class="newrow"><th class="rh">*</th><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                        </tbody>
-                    </table>
+                <div class="stack">
+                    <!-- Product list -->
+                    <div class="card">
+                        <div class="toolbar">
+                            <form id="search-form" method="get" action="/inventory" class="search">
+                                <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                                <input class="input" id="txtSearch" name="search" value="{{inventory.search}}" placeholder="Search by name, ID, category or supplier" autocomplete="off" aria-label="Search products">
+                            </form>
+                            <button type="button" class="btn btn-ghost" id="btnClear_Inv">Clear</button>
+                        </div>
+                        <div class="table-wrap dgv" id="inventoryGrid">
+                            <table>
+                                <thead>
+                                    <tr><th>Product</th><th>Category</th><th class="num">Price</th><th class="num">Qty</th><th>Added</th></tr>
+                                </thead>
+                                <tbody>
+                                    {{#inventory.rows}}
+                                    <tr data-id="{{product_id}}" data-row="{{json}}">
+                                        <td>
+                                            <div class="product-cell">
+                                                {{#image_url}}<img class="thumb" src="{{image_url}}" alt="" loading="lazy">{{/image_url}}
+                                                {{^image_url}}<span class="thumb">{{initials}}</span>{{/image_url}}
+                                                <div><div class="name">{{product_name}}</div><div class="meta">#{{product_id}} · {{supplier}}</div></div>
+                                            </div>
+                                        </td>
+                                        <td><span class="badge">{{category}}</span></td>
+                                        <td class="num strong">{{price_display}}</td>
+                                        <td class="num">{{quantity}}{{#low}} <span class="badge low">Low</span>{{/low}}</td>
+                                        <td class="muted" style="white-space:nowrap">{{date_display}}</td>
+                                    </tr>
+                                    {{/inventory.rows}}
+                                    {{^inventory.rows}}
+                                    <tr class="empty-row"><td colspan="5">No products found.</td></tr>
+                                    {{/inventory.rows}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Chart -->
+                    <div class="card">
+                        <div class="card-head"><h2>Top 10 most stocked products</h2><span class="hint">Units on hand</span></div>
+                        <div class="chart">{{{inventory.chart}}}</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =========================================================== -->
+        <!-- EMPLOYEE SCHEDULE                                            -->
+        <!-- =========================================================== -->
+        <section data-tabpage="schedule" data-title="Employee schedule" {{^tabSchedule}}hidden{{/tabSchedule}}>
+            <div class="page-head">
+                <div>
+                    <p class="eyebrow">Employee schedule</p>
+                    <h1>Shift generator</h1>
+                    <p class="sub">Plan who works when, hand out days off and shuffle the roster.</p>
+                </div>
+                <div class="head-actions">
+                    <button type="button" class="btn btn-outline" id="btnPrintSched">
+                        <svg class="ico" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H5a2 2 0 01-2-2v-4a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2h-2"/><rect x="7" y="14" width="10" height="7"/></svg>Print schedule</button>
+                    <form id="reset-dayoff-form" method="post" action="/schedule/reset-dayoff">
+                        <input type="hidden" name="_token" value="{{csrfToken}}">
+                        <input type="hidden" name="sched_start" class="js-sched-start">
+                        <input type="hidden" name="sched_end" class="js-sched-end">
+                        <button type="button" class="btn btn-outline" id="btnResetDayoff">Reset days off</button>
+                    </form>
+                    <form id="randomize-form" method="post" action="/schedule/randomize">
+                        <input type="hidden" name="_token" value="{{csrfToken}}">
+                        <input type="hidden" name="sched_start" class="js-sched-start">
+                        <input type="hidden" name="sched_end" class="js-sched-end">
+                        <button type="submit" class="btn btn-primary" id="btnRandomize">
+                            <svg class="ico" viewBox="0 0 24 24"><path d="M3 7h3c4 0 6 10 10 10h5M3 17h3c1.5 0 2.7-1.4 3.8-3M14 7h7M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>Randomize shifts</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="layout">
+                <div class="stack">
+                    <div class="card">
+                        <div class="card-head"><h2>Schedule period</h2></div>
+                        <div class="card-body fields">
+                            <div class="field"><label for="dtStartDate">Start date</label><input class="input" type="date" id="dtStartDate" value="{{schedule.start}}"></div>
+                            <div class="field"><label for="dtEndDate">End date</label><input class="input" type="date" id="dtEndDate" value="{{schedule.end}}"></div>
+                        </div>
+                    </div>
+
+                    <form id="dayoff-form" class="card" method="post" action="/schedule/dayoff">
+                        <input type="hidden" name="_token" value="{{csrfToken}}">
+                        <input type="hidden" name="names" id="hidDayoffName">
+                        <input type="hidden" name="sched_start" class="js-sched-start">
+                        <input type="hidden" name="sched_end" class="js-sched-end">
+                        <div class="card-head"><h2>Employee details</h2><span class="hint">Select a row</span></div>
+                        <div class="card-body">
+                            <div class="fields">
+                                <div class="field full"><label for="txtEmployee">Name</label><input class="input" id="txtEmployee" readonly placeholder="—"></div>
+                                <div class="field"><label for="txtSchedule">Schedule</label><input class="input" id="txtSchedule" readonly placeholder="—"></div>
+                                <div class="field"><label for="txtBreak">Break</label><input class="input" id="txtBreak" readonly placeholder="—"></div>
+                                <div class="field full"><label for="txtDuties">Duties</label><textarea class="textarea" id="txtDuties" readonly rows="2" placeholder="—"></textarea></div>
+                            </div>
+                            <div class="section-title" style="margin-top:20px;">Request a day off</div>
+                            <div style="display:flex;gap:10px;">
+                                <select class="select" id="cmbDayoff" name="day_off" aria-label="Day off">
+                                    <option value="">Select a day…</option>
+                                    {{#schedule.days}}<option value="{{value}}">{{value}}</option>{{/schedule.days}}
+                                </select>
+                                <button type="submit" class="btn btn-accent" id="btnRequest">Request</button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
 
-                <!-- panel3  Image -->
-                <div class="wf-panel" style="left:9px;top:402px;width:300px;height:259px;">
-                    <span class="wf-label" style="left:122px;top:7px;background:#fff;font:800 11.25pt Figtree,sans-serif;">Image:</span>
-                    <div class="wf-picture" id="pboxProductImage" style="left:19px;top:31px;width:259px;height:178px;background:#DCDCDC;"><img alt="" hidden></div>
-                    <button type="button" class="wf-btn flat" id="btnBrowse" style="left:19px;top:215px;width:259px;height:33px;">Browse Image</button>
+                <div class="stack">
+                    <div class="card">
+                        <div class="card-head"><h2>Days off this week</h2><span class="hint">One employee per day</span></div>
+                        <div class="week">
+                            {{#schedule.board}}
+                            <div class="day {{#taken}}taken{{/taken}}{{^taken}}free{{/taken}}">
+                                <div class="dname">{{day}}</div>
+                                <div class="who">{{#taken}}{{names}}{{/taken}}{{^taken}}Available{{/taken}}</div>
+                            </div>
+                            {{/schedule.board}}
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-head"><h2>Shift roster</h2><span class="hint">{{schedule.count}} employees</span></div>
+                        <div class="table-wrap short dgv" id="shiftGrid">
+                            <table>
+                                <thead><tr><th>Employee</th><th>Schedule</th><th>Break</th><th>Duties</th><th>Day off</th></tr></thead>
+                                <tbody>
+                                    {{#schedule.rows}}
+                                    <tr data-id="{{id}}" data-row="{{json}}">
+                                        <td><div class="person"><span class="avatar">{{initials}}</span><span class="strong">{{names}}</span></div></td>
+                                        <td style="white-space:nowrap">{{schedule}}</td>
+                                        <td class="muted" style="white-space:nowrap">{{breaks}}</td>
+                                        <td>{{duties}}</td>
+                                        <td>{{#day_off}}<span class="badge accent">{{day_off}}</span>{{/day_off}}{{^day_off}}<span class="muted">—</span>{{/day_off}}</td>
+                                    </tr>
+                                    {{/schedule.rows}}
+                                    {{^schedule.rows}}
+                                    <tr class="empty-row"><td colspan="5">No shifts yet.</td></tr>
+                                    {{/schedule.rows}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
+            </div>
+        </section>
 
-                <!-- panel4  Image File Path -->
-                <div class="wf-panel" style="left:315px;top:402px;width:367px;height:82px;">
-                    <span class="wf-label" style="left:15px;top:17px;background:#fff;font:800 11.25pt Figtree,sans-serif;">Image File Path:</span>
-                    <input class="wf-text" id="txtFilePath" readonly style="left:15px;top:42px;width:331px;height:25px;">
+        <!-- =========================================================== -->
+        <!-- PAYROLL                                                      -->
+        <!-- =========================================================== -->
+        <section data-tabpage="payroll" data-title="Payroll" {{^tabPayroll}}hidden{{/tabPayroll}}>
+            <div class="page-head">
+                <div>
+                    <p class="eyebrow">Payroll</p>
+                    <h1>Payroll management</h1>
+                    <p class="sub">₱550 daily rate · overtime at 1.25× · SSS, PhilHealth, Pag-IBIG and late deductions.</p>
                 </div>
-
-                <!-- panel5  Summary -->
-                <div class="wf-panel" style="left:315px;top:490px;width:367px;height:171px;">
-                    <span class="wf-label" style="left:134px;top:17px;background:#fff;font:700 14.25pt Figtree,sans-serif;">Summary:</span>
-                    <span class="wf-label" id="lbMostStocked" style="left:10px;top:58px;">{{inventory.summary.most}}</span>
-                    <span class="wf-label" id="lbLeastStocked" style="left:10px;top:90px;">{{inventory.summary.least}}</span>
-                    <span class="wf-label" id="lbTotal" style="left:10px;top:123px;">{{inventory.summary.total}}</span>
+                <div class="head-actions">
+                    <button type="button" class="btn btn-primary" id="btnPrintPayroll">
+                        <svg class="ico" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H5a2 2 0 01-2-2v-4a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2h-2"/><rect x="7" y="14" width="10" height="7"/></svg>Print payroll</button>
                 </div>
+            </div>
 
-                <!-- chart1 -->
-                <div class="wf-chart" style="left:689px;top:402px;width:520px;height:259px;">{{{inventory.chart}}}</div>
-            </section>
+            <div class="banner" id="holidayBanner">
+                <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 14l1 2h2l-1.6 1.3.6 2.2-2-1.3-2 1.3.6-2.2L9 16h2z"/></svg>
+                <div id="statusHolidays"><strong>Checking Philippine holidays for this payroll period…</strong></div>
+            </div>
 
-            <!-- =========================================================== -->
-            <!-- tabPage2  EMPLOYEE SCHEDULE                                  -->
-            <!-- =========================================================== -->
-            <section class="wf-tabpage" id="tab-schedule" data-tabpage="schedule" {{^tabSchedule}}hidden{{/tabSchedule}}>
-
-                <span class="wf-label" style="left:424px;top:19px;font:800 24pt Figtree,sans-serif;">Employee Shift Generator</span>
-
-                <!-- panel6  Shift Schedule Period -->
-                <div class="wf-panel" style="left:18px;top:75px;width:343px;height:162px;">
-                    <span class="wf-label" style="left:70px;top:16px;background:#fff;font:800 14.25pt Figtree,sans-serif;">Shift Schedule Period:</span>
-                    <label class="wf-label" for="dtStartDate" style="left:38px;top:57px;font-size:12pt;">Start Date:</label>
-                    <input class="wf-date" type="date" id="dtStartDate" value="{{schedule.start}}" style="left:126px;top:55px;width:173px;height:27px;font-size:12pt;">
-                    <label class="wf-label" for="dtEndDate" style="left:40px;top:102px;font-size:12pt;">End Date:</label>
-                    <input class="wf-date" type="date" id="dtEndDate" value="{{schedule.end}}" style="left:126px;top:100px;width:173px;height:27px;font-size:12pt;">
+            <div class="pay-hero" style="margin-bottom:20px;">
+                <div>
+                    <div class="label">Employee pay summary</div>
+                    <div class="value" id="lbEmployeeName">No employee selected</div>
+                    <div class="sub" id="lbEmployeeID">Select a row or fill in the form</div>
                 </div>
+                <div><div class="label">Gross pay</div><div class="value" id="lbGrossPay">₱0.00</div></div>
+                <div><div class="label">Deductions</div><div class="value" id="lbTotalDeductions">₱0.00</div></div>
+                <div><div class="label">Net pay</div><div class="value big" id="lbNetPay">₱0.00</div></div>
+                <div class="hero-action"><button type="button" class="btn btn-outline" id="btnPrintEmpPaySum">Print pay summary</button></div>
+            </div>
 
-                <!-- panel7  Employee Details -->
-                <div class="wf-panel" style="left:18px;top:256px;width:343px;height:335px;">
-                    <span class="wf-label" style="left:87px;top:17px;background:#fff;font:800 14.25pt Figtree,sans-serif;">Employee Details:</span>
-                    <label class="wf-label" for="txtEmployee" style="left:17px;top:44px;">Name:</label>
-                    <input class="wf-text" id="txtEmployee" readonly style="left:20px;top:65px;width:296px;height:25px;">
-                    <label class="wf-label" for="txtSchedule" style="left:17px;top:104px;">Schedule:</label>
-                    <input class="wf-text" id="txtSchedule" readonly style="left:20px;top:125px;width:296px;height:25px;">
-                    <label class="wf-label" for="txtBreak" style="left:17px;top:164px;">Break:</label>
-                    <input class="wf-text" id="txtBreak" readonly style="left:20px;top:185px;width:296px;height:25px;">
-                    <label class="wf-label" for="txtDuties" style="left:17px;top:220px;">Duties:</label>
-                    <textarea class="wf-text" id="txtDuties" readonly style="left:20px;top:241px;width:296px;height:60px;"></textarea>
-                </div>
-
-                <!-- shiftGrid (Fill columns, FullRowSelect) -->
-                <div class="dgv fill" id="shiftGrid" data-select="row" style="left:378px;top:75px;width:817px;height:351px;background:#F5F5F5;">
-                    <table>
-                        <colgroup><col style="width:41px"><col><col><col><col><col></colgroup>
-                        <thead>
-                            <tr style="height:30px"><th class="rh"></th><th>Employee Names</th><th>Schedule</th><th>Breaks</th><th>Duties</th><th>Day Off</th></tr>
-                        </thead>
-                        <tbody>
-                            {{#schedule.rows}}
-                            <tr data-id="{{id}}" data-row="{{json}}">
-                                <th class="rh"></th><td>{{names}}</td><td>{{schedule}}</td><td>{{breaks}}</td><td>{{duties}}</td><td>{{day_off}}</td>
-                            </tr>
-                            {{/schedule.rows}}
-                            <tr class="newrow"><th class="rh">*</th><td></td><td></td><td></td><td></td><td></td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- panel8  Day off request -->
-                <form id="dayoff-form" method="post" action="/schedule/dayoff" class="wf-panel" style="left:378px;top:445px;width:425px;height:146px;">
+            <div class="layout">
+                <form id="payroll-form" class="stack" method="post" action="/payroll" novalidate>
                     <input type="hidden" name="_token" value="{{csrfToken}}">
-                    <input type="hidden" name="names" id="hidDayoffName">
-                    <input type="hidden" name="sched_start" class="js-sched-start">
-                    <input type="hidden" name="sched_end" class="js-sched-end">
-                    <span class="wf-label" style="left:79px;top:27px;background:#fff;font:800 18pt Figtree,sans-serif;">Please Select Day off:</span>
-                    <select class="wf-combo system" id="cmbDayoff" name="day_off" style="left:29px;top:72px;width:241px;height:40px;font-size:20.25pt;">
-                        <option value=""></option>
-                        {{#schedule.days}}<option value="{{value}}">{{value}}</option>{{/schedule.days}}
-                    </select>
-                    <button type="submit" class="wf-btn popup-black" id="btnRequest" style="left:283px;top:72px;width:112px;height:40px;font:800 15.75pt Figtree,sans-serif;">Request</button>
+
+                    <div class="card">
+                        <div class="card-head"><h2>Payroll period</h2></div>
+                        <div class="card-body fields">
+                            <div class="field"><label for="dtStartPeriod">Start date</label><input class="input" type="date" id="dtStartPeriod" name="pay_start" value="{{payroll.start}}"></div>
+                            <div class="field"><label for="dtEndPeriod">End date</label><input class="input" type="date" id="dtEndPeriod" name="pay_end" value="{{payroll.end}}"></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-head"><h2>Employee details</h2><span class="badge new" id="payMode">New entry</span></div>
+                        <div class="card-body">
+                            <div class="fields">
+                                <div class="field full"><label for="txtEmployeeName">Name</label><input class="input" id="txtEmployeeName" name="name" placeholder="Full name"></div>
+                                <div class="field"><label for="txtEmployeeID">Employee ID</label><input class="input" id="txtEmployeeID" name="employee_id" placeholder="F-007"></div>
+                                <div class="field"><label for="udDaysWorked">Days worked</label>
+                                    <div class="stepper"><button type="button" tabindex="-1" data-step="-1" aria-label="Decrease">−</button><input id="udDaysWorked" name="days_worked" value="0" inputmode="numeric" data-min="0" data-max="100"><button type="button" tabindex="-1" data-step="1" aria-label="Increase">+</button></div></div>
+                                <div class="field"><label for="udOTHours">OT hours</label>
+                                    <div class="stepper"><button type="button" tabindex="-1" data-step="-1" aria-label="Decrease">−</button><input id="udOTHours" name="ot_hours" value="0" inputmode="numeric" data-min="0" data-max="100"><button type="button" tabindex="-1" data-step="1" aria-label="Increase">+</button></div></div>
+                                <div class="field"><label for="udLate">Late hours</label>
+                                    <div class="stepper"><button type="button" tabindex="-1" data-step="-1" aria-label="Decrease">−</button><input id="udLate" name="late_hours" value="0" inputmode="numeric" data-min="0" data-max="100"><button type="button" tabindex="-1" data-step="1" aria-label="Increase">+</button></div></div>
+                                <div class="field"><label for="udHolidaysWork">Holidays worked</label>
+                                    <div class="stepper"><button type="button" tabindex="-1" data-step="-1" aria-label="Decrease">−</button><input id="udHolidaysWork" name="holiday_present" value="0" inputmode="numeric" data-min="0" data-max="100"><button type="button" tabindex="-1" data-step="1" aria-label="Increase">+</button></div></div>
+                                <div class="field"><label for="cmbHolidayType">Holiday type</label>
+                                    <select class="select" id="cmbHolidayType" name="holiday_type">
+                                        <option value="">None</option>
+                                        {{#payroll.holidayTypes}}<option value="{{value}}">{{value}}</option>{{/payroll.holidayTypes}}
+                                    </select></div>
+                            </div>
+
+                            <div class="section-title" style="margin-top:22px;">Deductions</div>
+                            <div class="fields">
+                                <div class="field full"><label for="txtDeductionPerHour">Deduction per late hour (₱)</label><input class="input" id="txtDeductionPerHour" name="deduction_per_hour" inputmode="decimal" placeholder="0.00"></div>
+                                <div class="field"><label for="txtSSS">SSS</label><input class="input" id="txtSSS" name="sss" inputmode="decimal" placeholder="0.00"></div>
+                                <div class="field"><label for="txtPhilhealth">PhilHealth</label><input class="input" id="txtPhilhealth" name="philhealth" inputmode="decimal" placeholder="0.00"></div>
+                                <div class="field"><label for="txtPagibig">Pag-IBIG</label><input class="input" id="txtPagibig" name="pagibig" inputmode="decimal" placeholder="0.00"></div>
+                                <div class="field"><label for="txtOthers">Others</label><input class="input" id="txtOthers" name="others" inputmode="decimal" placeholder="0.00"></div>
+                            </div>
+                        </div>
+                        <div class="card-foot">
+                            <button type="submit" class="btn btn-primary btn-block" id="btnAddCalculate" {{#isEmployee}}disabled title="Not available for employee accounts"{{/isEmployee}}>Add &amp; calculate</button>
+                            <div class="btn-row" style="width:100%">
+                                <button type="button" class="btn btn-outline" id="btnEditPayroll">Edit</button>
+                                <button type="button" class="btn btn-outline" id="btnUpdatePayroll">Update</button>
+                                <button type="button" class="btn btn-ghost" id="btnClearPayroll">Clear</button>
+                            </div>
+                        </div>
+                    </div>
                 </form>
 
-                <form id="randomize-form" method="post" action="/schedule/randomize" class="wf-contents">
-                    <input type="hidden" name="_token" value="{{csrfToken}}">
-                    <input type="hidden" name="sched_start" class="js-sched-start">
-                    <input type="hidden" name="sched_end" class="js-sched-end">
-                    <button type="submit" class="wf-btn popup-black" id="btnRandomize" style="left:824px;top:445px;width:371px;height:68px;font:800 18pt Figtree,sans-serif;">Randomize Shift Schedule</button>
-                </form>
-                <button type="button" class="wf-btn popup-black" id="btnPrintSched" style="left:824px;top:530px;width:187px;height:61px;font:800 18pt Figtree,sans-serif;">Print Schedule</button>
-                <form id="reset-dayoff-form" method="post" action="/schedule/reset-dayoff" class="wf-contents">
-                    <input type="hidden" name="_token" value="{{csrfToken}}">
-                    <input type="hidden" name="sched_start" class="js-sched-start">
-                    <input type="hidden" name="sched_end" class="js-sched-end">
-                    <button type="button" class="wf-btn popup-black" id="btnResetDayoff" style="left:1026px;top:530px;width:169px;height:61px;font:800 18pt Figtree,sans-serif;">Reset Dayoff</button>
-                </form>
-            </section>
-
-            <!-- =========================================================== -->
-            <!-- tabPage3  PAYROLL MANAGEMENT                                 -->
-            <!-- =========================================================== -->
-            <section class="wf-tabpage" id="tab-payroll" data-tabpage="payroll" {{^tabPayroll}}hidden{{/tabPayroll}}>
-                <form id="payroll-form" method="post" action="/payroll" class="wf-contents" novalidate>
-                <input type="hidden" name="_token" value="{{csrfToken}}">
-
-                <span class="wf-label" style="left:487px;top:11px;font:800 24pt Figtree,sans-serif;">Payroll Management</span>
-
-                <!-- panel9  Payroll Period -->
-                <div class="wf-panel" style="left:9px;top:62px;width:267px;height:110px;">
-                    <span class="wf-label" style="left:64px;top:8px;background:#fff;font:800 14.25pt Figtree,sans-serif;">Payroll Period:</span>
-                    <label class="wf-label" for="dtStartPeriod" style="left:23px;top:39px;">Start Date:</label>
-                    <input class="wf-date" type="date" id="dtStartPeriod" name="pay_start" value="{{payroll.start}}" style="left:111px;top:37px;width:117px;height:25px;">
-                    <label class="wf-label" for="dtEndPeriod" style="left:25px;top:72px;">End Date:</label>
-                    <input class="wf-date" type="date" id="dtEndPeriod" name="pay_end" value="{{payroll.end}}" style="left:111px;top:70px;width:117px;height:25px;">
-                </div>
-
-                <!-- panel10  Employee Details -->
-                <div class="wf-panel" style="left:9px;top:178px;width:267px;height:425px;">
-                    <span class="wf-label" style="left:51px;top:8px;background:#fff;font:800 14.25pt Figtree,sans-serif;">Employee Details</span>
-                    <label class="wf-label" for="txtEmployeeName" style="left:15px;top:35px;">Name:</label>
-                    <input class="wf-text pay-field" id="txtEmployeeName" name="name" style="left:18px;top:56px;width:225px;height:25px;">
-                    <label class="wf-label" for="txtEmployeeID" style="left:15px;top:87px;">Employee ID:</label>
-                    <input class="wf-text pay-field" id="txtEmployeeID" name="employee_id" style="left:18px;top:108px;width:107px;height:25px;">
-                    <label class="wf-label" for="udLate" style="left:133px;top:86px;">Late Hours:</label>
-                    <div class="wf-num" style="left:136px;top:109px;width:107px;height:25px;">
-                        <input class="pay-field" id="udLate" name="late_hours" value="0" inputmode="numeric" data-min="0" data-max="100">
-                        <span class="wf-spin"><button type="button" tabindex="-1" data-step="1"></button><button type="button" tabindex="-1" data-step="-1"></button></span>
+                <div class="stack">
+                    <div class="stats" style="grid-template-columns:repeat(3,minmax(0,1fr));margin:0;">
+                        <div class="stat"><div class="stat-label">Employees</div><div class="stat-value">{{payroll.count}}</div></div>
+                        <div class="stat"><div class="stat-label">Total gross</div><div class="stat-value">{{payroll.totalGross}}</div></div>
+                        <div class="stat"><div class="stat-label">Total net pay</div><div class="stat-value">{{payroll.totalNet}}</div><div class="stat-note">after {{payroll.totalDed}} deductions</div></div>
                     </div>
-                    <label class="wf-label" for="udDaysWorked" style="left:15px;top:140px;">Days Worked:</label>
-                    <div class="wf-num" style="left:18px;top:163px;width:107px;height:25px;">
-                        <input class="pay-field" id="udDaysWorked" name="days_worked" value="0" inputmode="numeric" data-min="0" data-max="100">
-                        <span class="wf-spin"><button type="button" tabindex="-1" data-step="1"></button><button type="button" tabindex="-1" data-step="-1"></button></span>
+
+                    <div class="card">
+                        <div class="card-head"><h2>Payroll records</h2><span class="hint">Click a row to view</span></div>
+                        <div class="table-wrap dgv" id="payrollGrid">
+                            <table>
+                                <thead><tr><th>Employee</th><th class="num">Days</th><th class="num">OT</th><th class="num">Late</th><th>Holiday</th><th class="num">Gross</th><th class="num">Deductions</th><th class="num">Net pay</th></tr></thead>
+                                <tbody>
+                                    {{#payroll.rows}}
+                                    <tr data-id="{{id}}" data-employee-id="{{employee_id}}" data-row="{{json}}">
+                                        <td><div class="person"><span class="avatar">{{initials}}</span><div><div class="strong">{{name}}</div><div class="meta">{{employee_id}}</div></div></div></td>
+                                        <td class="num">{{days_worked}}</td>
+                                        <td class="num">{{ot_hours}}</td>
+                                        <td class="num">{{late_hours}}</td>
+                                        <td>{{#holiday_type}}<span class="badge">{{holiday_present}} · {{holiday_type}}</span>{{/holiday_type}}{{^holiday_type}}<span class="muted">—</span>{{/holiday_type}}</td>
+                                        <td class="num">{{gross_display}}</td>
+                                        <td class="num muted">{{ded_display}}</td>
+                                        <td class="num strong">{{net_display}}</td>
+                                    </tr>
+                                    {{/payroll.rows}}
+                                    {{^payroll.rows}}
+                                    <tr class="empty-row"><td colspan="8">No payroll records yet.</td></tr>
+                                    {{/payroll.rows}}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    <label class="wf-label" for="udOTHours" style="left:133px;top:140px;">OT Hours:</label>
-                    <div class="wf-num" style="left:136px;top:163px;width:107px;height:25px;">
-                        <input class="pay-field" id="udOTHours" name="ot_hours" value="0" inputmode="numeric" data-min="0" data-max="100">
-                        <span class="wf-spin"><button type="button" tabindex="-1" data-step="1"></button><button type="button" tabindex="-1" data-step="-1"></button></span>
-                    </div>
-                    <label class="wf-label" for="udHolidaysWork" style="left:15px;top:203px;font-size:9.75pt;">Holidays Worked:</label>
-                    <div class="wf-num" style="left:18px;top:225px;width:107px;height:25px;">
-                        <input class="pay-field" id="udHolidaysWork" name="holiday_present" value="0" inputmode="numeric" data-min="0" data-max="100">
-                        <span class="wf-spin"><button type="button" tabindex="-1" data-step="1"></button><button type="button" tabindex="-1" data-step="-1"></button></span>
-                    </div>
-                    <label class="wf-label" for="cmbHolidayType" style="left:133px;top:202px;">Holiday Type:</label>
-                    <select class="wf-combo pay-field" id="cmbHolidayType" name="holiday_type" style="left:136px;top:225px;width:107px;height:26px;">
-                        <option value=""></option>
-                        {{#payroll.holidayTypes}}<option value="{{value}}">{{value}}</option>{{/payroll.holidayTypes}}
-                    </select>
-
-                    <button type="submit" class="wf-btn flat" id="btnAddCalculate" style="left:18px;top:260px;width:225px;height:33px;font:800 12pt Figtree,sans-serif;" {{#isEmployee}}disabled{{/isEmployee}}>Add | Calculate</button>
-                    <button type="button" class="wf-btn flat" id="btnEditPayroll" style="left:18px;top:299px;width:225px;height:33px;font:800 12pt Figtree,sans-serif;">Edit</button>
-                    <button type="button" class="wf-btn flat" id="btnUpdatePayroll" style="left:18px;top:338px;width:225px;height:33px;font:800 12pt Figtree,sans-serif;">Update</button>
-                    <button type="button" class="wf-btn flat" id="btnClearPayroll" style="left:18px;top:377px;width:225px;height:33px;font:800 12pt Figtree,sans-serif;">Clear</button>
                 </div>
-
-                <!-- payrollGrid -->
-                <div class="dgv" id="payrollGrid" data-select="cell" style="left:282px;top:62px;width:927px;height:388px;background:#fff;">
-                    <table>
-                        <colgroup><col style="width:51px"><col span="15" style="width:100px"></colgroup>
-                        <thead>
-                            <tr style="height:50px"><th class="rh"></th><th>Name</th><th>Employee ID</th><th>Days Worked</th><th>OT Hours</th><th>Late Hours</th><th>Deduction/Hour</th><th>Holiday Present</th><th>Holiday Type</th><th>Net Pay</th><th>Gross Pay</th><th>Total Deductions</th><th>SSS</th><th>PhilHealth</th><th>Pagibig</th><th>Others</th></tr>
-                        </thead>
-                        <tbody>
-                            {{#payroll.rows}}
-                            <tr data-id="{{id}}" data-employee-id="{{employee_id}}" data-row="{{json}}">
-                                <th class="rh"></th>
-                                <td>{{name}}</td><td>{{employee_id}}</td><td>{{days_worked}}</td><td>{{ot_hours}}</td><td>{{late_hours}}</td>
-                                <td>{{deduction_per_hour}}</td><td>{{holiday_present}}</td><td>{{holiday_type}}</td><td>{{net_pay}}</td>
-                                <td>{{gross_pay}}</td><td>{{total_deductions}}</td><td>{{sss}}</td><td>{{philhealth}}</td><td>{{pagibig}}</td><td>{{others}}</td>
-                            </tr>
-                            {{/payroll.rows}}
-                            <tr class="newrow"><th class="rh">*</th><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- panel11  Deductions -->
-                <div class="wf-panel" style="left:282px;top:455px;width:394px;height:207px;">
-                    <span class="wf-label" style="left:144px;top:10px;background:#fff;font:800 14.25pt Figtree,sans-serif;">Deductions</span>
-                    <label class="wf-label" for="txtDeductionPerHour" style="left:16px;top:37px;">Deduction per Hour (Late)</label>
-                    <input class="wf-text pay-field" id="txtDeductionPerHour" name="deduction_per_hour" inputmode="decimal" style="left:19px;top:58px;width:352px;height:25px;">
-                    <label class="wf-label" for="txtPhilhealth" style="left:16px;top:91px;">PhilHealth:</label>
-                    <input class="wf-text pay-field" id="txtPhilhealth" name="philhealth" inputmode="decimal" style="left:19px;top:112px;width:153px;height:25px;">
-                    <label class="wf-label" for="txtPagibig" style="left:215px;top:91px;">Pag-IBIG:</label>
-                    <input class="wf-text pay-field" id="txtPagibig" name="pagibig" inputmode="decimal" style="left:218px;top:112px;width:153px;height:25px;">
-                    <label class="wf-label" for="txtSSS" style="left:16px;top:146px;">SSS:</label>
-                    <input class="wf-text pay-field" id="txtSSS" name="sss" inputmode="decimal" style="left:19px;top:167px;width:153px;height:25px;">
-                    <label class="wf-label" for="txtOthers" style="left:215px;top:146px;">Others:</label>
-                    <input class="wf-text pay-field" id="txtOthers" name="others" inputmode="decimal" style="left:218px;top:167px;width:153px;height:25px;">
-                </div>
-
-                <!-- panel12  Employee Pay Summary -->
-                <div class="wf-panel" style="left:682px;top:456px;width:527px;height:206px;">
-                    <span class="wf-label" style="left:149px;top:21px;background:#fff;font:800 14.25pt Figtree,sans-serif;">Employee Pay Summary:</span>
-                    <span class="wf-label" id="lbEmployeeName" style="left:30px;top:60px;">Name:</span>
-                    <span class="wf-label" id="lbGrossPay" style="left:313px;top:60px;">Gross Pay:</span>
-                    <span class="wf-label" id="lbEmployeeID" style="left:30px;top:99px;">Employee ID:</span>
-                    <span class="wf-label" id="lbNetPay" style="left:313px;top:99px;">Net Pay:</span>
-                    <button type="button" class="wf-btn flat" id="btnPrintEmpPaySum" style="left:33px;top:137px;width:457px;height:46px;font:800 15.75pt Figtree,sans-serif;">Print Employee Pay Summary</button>
-                </div>
-
-                <button type="button" class="wf-btn flat" id="btnPrintPayroll" style="left:9px;top:609px;width:267px;height:53px;font:800 18pt Figtree,sans-serif;">Print Payroll</button>
-                </form>
-            </section>
-        </div>
-
-        <!-- statusStrip (added: external API + signed-in user) -->
-        <div class="wf-status" style="left:0;top:778px;width:1238px;height:22px;">
-            <span id="statusHolidays" class="wf-status-item spring">Checking Philippine holidays for the payroll period…</span>
-            <span class="wf-status-item">User: {{user.username}} ({{user.role}})</span>
-            <a class="wf-status-item link" href="/docs" target="_blank" rel="noopener">API Docs</a>
-        </div>
+            </div>
+        </section>
+    </main>
     </div>
 </div>
 

@@ -9,8 +9,10 @@ Floridablanca) rebuilt as a PHP web application on a DIY framework made from the
 | `mustache/mustache` | Logic-less templates with a shared layout |
 | `illuminate/database` | Eloquent ORM used standalone (Capsule) |
 
-The screens keep the exact layout of `Form1.Designer.cs` and `Form2.Designer.cs` (same coordinates, sizes,
-fonts, colors, button styles, DataGridView look and MessageBox texts).
+The business logic, rules and messages are the same as the C# app (`Form1.cs` / `Form2.cs`); the interface
+is a modern, responsive web UI in the But First Coffee brand style (black, warm paper, caramel accent, Figtree):
+sidebar navigation, stat tiles, card forms, selectable tables, a day-off board, a pay-summary panel, dialogs
+and toasts. It works on desktop, tablet and phone.
 
 ## Requirements
 
@@ -99,8 +101,11 @@ composer test         # PHPUnit: 19 tests
 
 - Browser equivalents replace desktop-only features: `OpenFileDialog` → file upload, `PrintDialog` → print
   preview page + browser print dialog, `Application.Exit` → close/logout.
-- A status strip was added at the bottom of the main window to show the external holiday API result.
-- The payroll grid column that stores net pay is labelled **Net Pay** (the C# grid labelled it "Basic Pay").
+- Modern web UI instead of the WinForms look; the payroll table shows the key columns (deduction details
+  appear in the form when a row is selected) and the pay summary updates live while typing.
+- A holiday banner on the Payroll page shows the external holiday API result.
+- Success messages appear as toasts; warnings, errors and confirmations stay as dialogs.
+- The payroll column that stores net pay is labelled **Net Pay** (the C# grid labelled it "Basic Pay").
 - Payroll fields are editable for a new entry after **Clear** (in C# they stayed read-only until a row was selected).
 - The shift randomizer keeps each employee's payroll link while shuffling (the C# version deleted it).
 - Date pickers display in the browser's locale format.

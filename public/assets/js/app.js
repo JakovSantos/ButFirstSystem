@@ -1,8 +1,7 @@
 /* =====================================================================
-   BUT FIRST, SYSTEM - client behaviour
-   Port of the C# event handlers in Form1.cs / Form2.cs. The server (PHP)
-   re-validates everything; this file only reproduces the desktop UX:
-   MessageBoxes, grid CellClick, edit/lock modes and button rules.
+   BUT FIRST, SYSTEM — client behaviour
+   Port of the C# event handlers in Form1.cs / Form2.cs (same rules, same
+   messages). The PHP server re-validates everything.
    ===================================================================== */
 (function () {
     'use strict';
@@ -15,10 +14,22 @@
     };
     function parseJson(text, fallback) { try { return JSON.parse(text); } catch (e) { return fallback; } }
     function isNumber(v) { return String(v).trim() !== '' && !isNaN(Number(v)) && isFinite(Number(v)); }
-    function n2(v) { return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function peso(v) {
+        var n = Number(v) || 0;
+        return (n < 0 ? '-₱' : '₱') + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+
+    var ICONS = {
+        information: '<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+        warning: '<svg class="ico" viewBox="0 0 24 24"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17h.01"/></svg>',
+        error: '<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>',
+        question: '<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 4M12 17h.01"/></svg>',
+        check: '<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>'
+    };
 
     /* -----------------------------------------------------------------
-       MessageBox.Show(text, caption, buttons, icon)
+       MessageBox.Show(text, caption, icon, buttons)  → dialog
        ----------------------------------------------------------------- */
     var MsgBox = (function () {
         var overlay = $('#msgbox-overlay');
@@ -30,38 +41,38 @@
                 $('#msgbox-caption').textContent = caption || '';
                 $('#msgbox-text').textContent = text || '';
                 var iconEl = $('#msgbox-icon');
-                iconEl.className = 'msgbox-icon' + (icon ? ' icon-' + icon : '');
+                iconEl.className = 'dialog-icon ' + (icon || 'information');
+                iconEl.innerHTML = ICONS[icon] || ICONS.information;
                 var box = $('#msgbox-buttons');
                 box.innerHTML = '';
                 var lastFocus = document.activeElement;
+                var cancel = buttons.indexOf('No') >= 0 ? 'No' : buttons[buttons.length - 1];
 
                 function done(result) {
                     overlay.hidden = true;
                     document.removeEventListener('keydown', onKey, true);
+                    overlay.removeEventListener('click', onBackdrop);
                     if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) { /* ignore */ } }
                     resolve(result);
                 }
-                function onKey(e) {
-                    if (e.key === 'Escape') {
-                        e.preventDefault();
-                        done(buttons.indexOf('No') >= 0 ? 'No' : buttons[buttons.length - 1]);
-                    }
-                }
+                function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); done(cancel); } }
+                function onBackdrop(e) { if (e.target === overlay) { done(cancel); } }
 
-                buttons.forEach(function (label, i) {
+                // Primary action on the right, like modern dialogs.
+                buttons.slice().reverse().forEach(function (label) {
                     var b = document.createElement('button');
                     b.type = 'button';
                     b.textContent = label;
-                    if (i === 0) { b.className = 'default'; }
+                    var primary = label === buttons[0];
+                    var destructive = primary && icon === 'warning' && buttons.length > 1;
+                    b.className = 'btn ' + (primary ? (destructive ? 'btn-danger' : 'btn-primary') : 'btn-outline');
                     b.addEventListener('click', function () { done(label); });
                     box.appendChild(b);
                 });
-                overlay.querySelector('[data-msgbox="close"]').onclick = function () {
-                    done(buttons.indexOf('No') >= 0 ? 'No' : buttons[buttons.length - 1]);
-                };
                 document.addEventListener('keydown', onKey, true);
+                overlay.addEventListener('click', onBackdrop);
                 overlay.hidden = false;
-                box.firstChild.focus();
+                box.lastChild.focus();
             });
         }
 
@@ -75,63 +86,31 @@
     }());
     window.MsgBox = MsgBox;
 
-    /* -----------------------------------------------------------------
-       Window chrome: fit-to-screen, minimize, maximize, close
-       ----------------------------------------------------------------- */
-    var win = $('.win');
-    var maximized = false;
-
-    function fit() {
-        if (!win) { return; }
-        var w = win.offsetWidth, h = win.offsetHeight;
-        var availW = window.innerWidth - 32, availH = window.innerHeight - 48;
-        var scale = maximized ? Math.min(availW / w, availH / h) : Math.min(1, availW / w);
-        win.style.zoom = scale > 0 ? String(scale) : '1';
-        win.classList.toggle('maximized', maximized);
-    }
-    window.addEventListener('resize', fit);
-    fit();
-
-    $$('[data-window]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            var action = btn.getAttribute('data-window');
-            if (action === 'maximize') { maximized = !maximized; fit(); return; }
-            if (action === 'minimize') { minimize(); return; }
-            if (action === 'close') {
-                if (win.getAttribute('data-window-kind') === 'main') { $('#logout-form').submit(); }
-                else { exitApp(); }
-            }
-        });
-    });
-
-    function minimize() {
-        win.hidden = true;
-        var bar = document.createElement('button');
-        bar.type = 'button';
-        bar.className = 'wf-btn-std';
-        bar.style.cssText = 'position:fixed;left:16px;bottom:16px;height:32px;padding:0 14px;';
-        bar.innerHTML = '<img src="/favicon.ico" alt="" width="16" height="16" style="margin-right:8px"> But First, System';
-        bar.addEventListener('click', function () { win.hidden = false; bar.remove(); fit(); });
-        document.body.appendChild(bar);
+    /* Success messages appear as a toast instead of blocking the screen. */
+    function toast(text, caption) {
+        var host = $('#toasts');
+        if (!host) { return MsgBox.show(text, caption, 'information'); }
+        var el = document.createElement('div');
+        el.className = 'toast';
+        el.setAttribute('role', 'status');
+        el.innerHTML = ICONS.check + '<div><strong>' + esc(caption) + '</strong><span>' + esc(text) + '</span></div>';
+        host.appendChild(el);
+        setTimeout(function () { el.classList.add('leaving'); setTimeout(function () { el.remove(); }, 250); }, 4200);
+        return Promise.resolve('OK');
     }
 
-    function exitApp() { // Application.Exit()
-        window.close();
-        setTimeout(function () {
-            if (win) { win.hidden = true; }
-            var note = $('#closed-note');
-            if (note) { note.hidden = false; }
-        }, 50);
-    }
-
-    /* -----------------------------------------------------------------
-       Flash message from the server (MessageBox after a redirect)
-       ----------------------------------------------------------------- */
     function showFlash() {
         var f = $('#flash');
         if (!f) { return Promise.resolve(); }
-        return MsgBox.show(f.getAttribute('data-message'), f.getAttribute('data-caption'), f.getAttribute('data-icon'));
+        var icon = f.getAttribute('data-icon');
+        var text = f.getAttribute('data-message'), caption = f.getAttribute('data-caption');
+        return icon === 'information' ? toast(text, caption) : MsgBox.show(text, caption, icon);
     }
+
+    /* Sign out (closing the main window) */
+    $$('.js-logout').forEach(function (b) {
+        b.addEventListener('click', function () { $('#logout-form').submit(); });
+    });
 
     /* -----------------------------------------------------------------
        LOGIN (Form1)
@@ -145,7 +124,17 @@
                 MsgBox.show('Please enter both username and password.', 'Login Error', 'warning');
             }
         });
-        $('#btnExit').addEventListener('click', exitApp);
+        $('#btnTogglePw').addEventListener('click', function () {
+            var show = txtPassword.type === 'password';
+            txtPassword.type = show ? 'text' : 'password';
+            this.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        });
+        $('#btnExit').addEventListener('click', function () { // Application.Exit()
+            txtUser.value = '';
+            txtPassword.value = '';
+            window.close();
+            setTimeout(function () { $('#closed-note').hidden = false; }, 50);
+        });
         showFlash().then(function () {
             var f = $('#flash');
             if (f && f.getAttribute('data-caption') === 'Login Failed') {
@@ -153,7 +142,7 @@
                 txtPassword.focus();
             }
         });
-        return; // nothing else on the login page
+        return;
     }
 
     if (!$('#main-window')) { showFlash(); return; }
@@ -161,24 +150,31 @@
     /* -----------------------------------------------------------------
        MAIN WINDOW (Form2)
        ----------------------------------------------------------------- */
-    var old = parseJson(($('#old-input') || {}).getAttribute ? $('#old-input').getAttribute('data-json') : '{}', {}) || {};
+    var old = parseJson($('#old-input').getAttribute('data-json'), {}) || {};
     var state = $('#page-state');
 
-    /* ---------- TabControl ---------- */
-    $$('.wf-tab').forEach(function (tab) {
-        tab.addEventListener('click', function (e) {
+    /* ---------- Module navigation (TabControl) ---------- */
+    $$('.nav-item[data-tab]').forEach(function (link) {
+        link.addEventListener('click', function (e) {
             e.preventDefault();
-            selectTab(tab.getAttribute('data-tab'));
+            selectTab(link.getAttribute('data-tab'));
         });
     });
     function selectTab(name) {
-        $$('.wf-tab').forEach(function (t) { t.classList.toggle('selected', t.getAttribute('data-tab') === name); });
-        $$('.wf-tabpage').forEach(function (p) { p.hidden = p.getAttribute('data-tabpage') !== name; });
-        try { history.replaceState(null, '', '/' + name + window.location.search.replace(/([?&])(search|selected)=[^&]*/g, '$1').replace(/[?&]+$/, '')); } catch (e) { /* ignore */ }
+        $$('.nav-item[data-tab]').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === name); });
+        $$('[data-tabpage]').forEach(function (p) {
+            var on = p.getAttribute('data-tabpage') === name;
+            p.hidden = !on;
+            if (on) { document.title = p.getAttribute('data-title') + ' · But First Coffee'; }
+        });
+        window.scrollTo(0, 0);
+        try { history.replaceState(null, '', '/' + name); } catch (e) { /* ignore */ }
     }
+    var current = $('[data-tabpage]:not([hidden])');
+    if (current) { document.title = current.getAttribute('data-title') + ' · But First Coffee'; }
 
-    /* ---------- NumericUpDown ---------- */
-    $$('.wf-num').forEach(function (box) {
+    /* ---------- NumericUpDown → stepper ---------- */
+    $$('.stepper').forEach(function (box) {
         var input = $('input', box);
         var min = Number(input.getAttribute('data-min') || 0);
         var max = Number(input.getAttribute('data-max') || 100);
@@ -187,78 +183,75 @@
             if (isNaN(v)) { v = min; }
             input.value = String(Math.max(min, Math.min(max, v)));
         }
-        $$('.wf-spin button', box).forEach(function (b) {
+        function step(d) {
+            if (box.classList.contains('disabled') || input.readOnly) { return; }
+            clamp();
+            input.value = String(Math.max(min, Math.min(max, Number(input.value) + d)));
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        $$('button', box).forEach(function (b) {
             b.addEventListener('mousedown', function (e) { e.preventDefault(); });
-            b.addEventListener('click', function () {
-                if (box.classList.contains('disabled') || input.readOnly) { return; }
-                clamp();
-                input.value = String(Math.max(min, Math.min(max, Number(input.value) + Number(b.getAttribute('data-step')))));
-                input.dispatchEvent(new Event('input', { bubbles: true }));
-            });
+            b.addEventListener('click', function () { step(Number(b.getAttribute('data-step'))); });
         });
         input.addEventListener('keydown', function (e) {
-            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                e.preventDefault();
-                if (input.readOnly) { return; }
-                clamp();
-                input.value = String(Math.max(min, Math.min(max, Number(input.value) + (e.key === 'ArrowUp' ? 1 : -1))));
-            } else if (e.key.length === 1 && !/[0-9]/.test(e.key) && !e.ctrlKey && !e.metaKey) {
-                e.preventDefault();
-            }
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); step(e.key === 'ArrowUp' ? 1 : -1); }
+            else if (e.key.length === 1 && !/[0-9]/.test(e.key) && !e.ctrlKey && !e.metaKey) { e.preventDefault(); }
         });
         input.addEventListener('blur', clamp);
     });
     function setNumEnabled(input, enabled) {
         input.readOnly = !enabled;
-        input.closest('.wf-num').classList.toggle('disabled', !enabled);
+        input.closest('.stepper').classList.toggle('disabled', !enabled);
     }
 
-    /* ---------- DataGridView ---------- */
+    /* ---------- DataGridView → selectable table ---------- */
     function Grid(el, onCellClick) {
-        var mode = el.getAttribute('data-select'); // 'cell' (RowHeaderSelect) or 'row' (FullRowSelect)
-        var rows = $$('tbody tr', el);
+        var rows = $$('tbody tr[data-row]', el);
         var self = { el: el, current: null };
 
-        function clear() {
-            rows.forEach(function (r) { r.classList.remove('current', 'selrow'); });
-            $$('td.sel', el).forEach(function (c) { c.classList.remove('sel'); });
-        }
-        self.select = function (tr, td, fire) {
-            clear();
-            tr.classList.add('current');
-            if (mode === 'row') { tr.classList.add('selrow'); }
-            else { (td || tr.querySelector('td')).classList.add('sel'); }
-            self.current = tr.classList.contains('newrow') ? null : tr;
-            if (fire && onCellClick) { onCellClick(self.current ? parseJson(tr.getAttribute('data-row'), null) : null, tr); }
+        self.select = function (tr, fire) {
+            rows.forEach(function (r) { r.classList.remove('selected'); r.removeAttribute('aria-selected'); });
+            tr.classList.add('selected');
+            tr.setAttribute('aria-selected', 'true');
+            self.current = tr;
+            if (fire && onCellClick) { onCellClick(parseJson(tr.getAttribute('data-row'), null), tr); }
+        };
+        self.clear = function () {
+            rows.forEach(function (r) { r.classList.remove('selected'); r.removeAttribute('aria-selected'); });
+            self.current = null;
         };
         self.find = function (attr, value) {
             for (var i = 0; i < rows.length; i++) { if (rows[i].getAttribute(attr) === String(value)) { return rows[i]; } }
             return null;
         };
         self.data = function () { return self.current ? parseJson(self.current.getAttribute('data-row'), null) : null; };
-        self.count = function () { return rows.filter(function (r) { return !r.classList.contains('newrow'); }).length; };
+        self.count = function () { return rows.length; };
 
+        rows.forEach(function (tr) { tr.tabIndex = 0; });
         el.addEventListener('click', function (e) {
-            var tr = e.target.closest('tbody tr');
-            if (!tr) { return; }
-            var td = e.target.closest('td');
-            self.select(tr, td, true);
+            var tr = e.target.closest('tbody tr[data-row]');
+            if (tr) { self.select(tr, true); }
         });
-
-        // A DataGridView selects its first cell when it is bound.
-        if (rows.length) { self.select(rows[0], null, false); }
+        el.addEventListener('keydown', function (e) {
+            var tr = e.target.closest('tbody tr[data-row]');
+            if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); self.select(tr, true); }
+        });
         return self;
     }
 
+    function clearInvalid(root) { $$('.invalid', root).forEach(function (el) { el.classList.remove('invalid'); }); }
+    function markInvalid(el) { (el.closest('.stepper') || el).classList.add('invalid'); }
+    function setMode(el, kind, text) { el.className = 'badge ' + kind; el.textContent = text; }
+
     /* =================================================================
-       INVENTORY TAB
+       INVENTORY
        ================================================================= */
     var inv = {
         form: $('#product-form'),
         name: $('#txtProductName'), category: $('#cmbCategory'), qty: $('#udQuantity'),
         price: $('#txtPrice'), date: $('#dtDateAdded'), supplier: $('#txtSupplier'),
-        id: $('#txtProductID'), path: $('#txtFilePath'), hidPath: $('#hidImagePath'),
-        file: $('#fileImage'), pbox: $('#pboxProductImage'), btnAdd: $('#btnAdd'),
+        id: $('#txtProductID'), path: $('#txtFilePath'), pathLabel: $('#filePathLabel'), hidPath: $('#hidImagePath'),
+        file: $('#fileImage'), pbox: $('#pboxProductImage'), btnAdd: $('#btnAdd'), mode: $('#invMode'),
         editProductId: -1, isEditMode: false
     };
     var today = inv.date.value;
@@ -271,11 +264,19 @@
         fillProduct(row);
         lockProductFields(true);
         inv.btnAdd.textContent = 'Add';
+        setMode(inv.mode, 'view', 'Viewing #' + row.product_id);
+        if (window.matchMedia('(max-width: 1100px)').matches) { inv.form.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     });
 
     function showImage(url) {
         var img = $('img', inv.pbox);
         if (url) { img.src = url; img.hidden = false; } else { img.removeAttribute('src'); img.hidden = true; }
+        inv.pbox.classList.toggle('has-image', !!url);
+        $('.empty', inv.pbox).hidden = !!url;
+    }
+    function setPath(p) {
+        inv.path.value = p || '';
+        inv.pathLabel.textContent = p ? p.split('/').pop() : 'No image selected';
     }
     function fillProduct(row) {
         inv.id.value = row.product_id;
@@ -285,7 +286,7 @@
         inv.qty.value = row.quantity;
         inv.supplier.value = row.supplier || '';
         if (row.date_added) { inv.date.value = row.date_added; }
-        inv.path.value = row.image_path || '';
+        setPath(row.image_path);
         inv.hidPath.value = row.image_path || '';
         inv.file.value = '';
         showImage(row.image_url);
@@ -299,12 +300,11 @@
         setNumEnabled(inv.qty, !lock);
         inv.supplier.readOnly = lock;
         inv.date.disabled = lock;
-        inv.path.readOnly = true;
     }
     function clearFields(keepSearch) { // ClearFields
         inv.id.value = ''; inv.name.value = ''; inv.category.value = ''; inv.price.value = '';
         inv.qty.value = '0'; inv.supplier.value = ''; inv.date.value = today;
-        inv.path.value = ''; inv.hidPath.value = ''; inv.file.value = '';
+        setPath(''); inv.hidPath.value = ''; inv.file.value = '';
         showImage('');
         if (!keepSearch) { $('#txtSearch').value = ''; }
         inv.btnAdd.textContent = 'Add';
@@ -312,9 +312,9 @@
         inv.isEditMode = false;
         lockProductFields(false);
         clearInvalid(inv.form);
+        inventoryGrid.clear();
+        setMode(inv.mode, 'new', 'New product');
     }
-    function clearInvalid(root) { $$('.invalid', root).forEach(function (el) { el.classList.remove('invalid'); }); }
-    function markInvalid(el) { (el.closest('.wf-num') || el).classList.add('invalid'); }
 
     // Price: digits and a single '.' (txtPrice_KeyPress)
     inv.price.addEventListener('keydown', function (e) {
@@ -338,6 +338,7 @@
         inv.form.action = inv.editProductId === -1 ? '/inventory' : '/inventory/' + inv.editProductId;
         inv.category.disabled = false;
         inv.date.disabled = false;
+        inv.btnAdd.disabled = true;
         inv.form.submit();
     });
 
@@ -352,7 +353,9 @@
         inv.isEditMode = true;
         fillProduct(row);
         lockProductFields(false);
-        inv.btnAdd.textContent = 'Update';
+        inv.btnAdd.textContent = 'Save changes';
+        setMode(inv.mode, 'edit', 'Editing #' + row.product_id);
+        inv.name.focus();
     });
 
     // Remove (btnRemove_Click)
@@ -362,7 +365,7 @@
             MsgBox.show('Please select a product to remove.', 'No Selection', 'warning');
             return;
         }
-        MsgBox.show('Are you sure you want to remove this product?', 'Confirm Delete', 'warning', ['Yes', 'No']).then(function (r) {
+        MsgBox.show('Are you sure you want to remove this product?\n' + row.product_name, 'Confirm Delete', 'warning', ['Yes', 'No']).then(function (r) {
             if (r !== 'Yes') { return; }
             var f = $('#remove-form');
             f.action = '/inventory/' + row.product_id + '/delete';
@@ -371,13 +374,16 @@
     });
 
     // Browse Image (btnBrowse_Click)
-    $('#btnBrowse').addEventListener('click', function () {
+    function browse() {
         if (inv.editProductId !== -1 && !inv.isEditMode) {
             MsgBox.show("Please click 'Edit' before browsing for an image.", 'Edit Mode Required', 'information');
             return;
         }
         inv.file.click();
-    });
+    }
+    $('#btnBrowse').addEventListener('click', browse);
+    inv.pbox.addEventListener('click', browse);
+    inv.pbox.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); browse(); } });
     inv.file.addEventListener('change', function () {
         var f = inv.file.files && inv.file.files[0];
         if (!f) { return; }
@@ -386,9 +392,12 @@
             MsgBox.show('Image Files (*.jpg; *.jpeg; *.png; *.bmp) only.', 'Select an Image', 'warning');
             return;
         }
-        inv.path.value = f.name;
+        setPath(f.name);
         showImage(URL.createObjectURL(f));
     });
+
+    // New product (ClearFields without reloading)
+    $('#btnNewProduct').addEventListener('click', function () { clearFields(true); inv.name.focus(); });
 
     // Load (btnLoad_Click) and Clear (btnClear_Inv_Click) reload the list
     $('#btnLoad').addEventListener('click', function () { clearFields(); window.location.href = '/inventory'; });
@@ -404,7 +413,7 @@
         }, 400);
     });
     $('#search-form').addEventListener('submit', function (e) { e.preventDefault(); });
-    if (search.value !== '' && !$('#tab-inventory').hidden) {
+    if (search.value !== '' && !$('[data-tabpage="inventory"]').hidden) {
         search.focus();
         search.setSelectionRange(search.value.length, search.value.length);
     }
@@ -419,11 +428,15 @@
         window.open('/inventory/print' + (q ? '?search=' + encodeURIComponent(q) : ''), '_blank');
     });
 
-    // After add/update the C# app calls ClearFields(); we only move the grid's current row.
+    // After add/update the C# app calls ClearFields(); highlight the saved row.
     var invSel = state.getAttribute('data-inventory-selected');
     if (invSel) {
         var tr = inventoryGrid.find('data-id', invSel);
-        if (tr) { inventoryGrid.select(tr, null, false); tr.scrollIntoView({ block: 'nearest' }); }
+        if (tr) {
+            tr.classList.add('selected');
+            setTimeout(function () { tr.classList.remove('selected'); }, 2500);
+            tr.scrollIntoView({ block: 'nearest' });
+        }
         try { history.replaceState(null, '', window.location.pathname); } catch (e) { /* ignore */ }
     }
 
@@ -432,14 +445,17 @@
         var o = old.inventory;
         inv.name.value = o.product_name || ''; inv.category.value = o.category || ''; inv.price.value = o.price || '';
         inv.qty.value = o.quantity || 0; inv.supplier.value = o.supplier || ''; inv.date.value = o.date_added || today;
-        inv.hidPath.value = o.image_path || ''; inv.path.value = o.image_path || '';
-        if (old.editing) { inv.editProductId = old.editing; inv.isEditMode = true; inv.id.value = old.editing; inv.btnAdd.textContent = 'Update'; }
+        inv.hidPath.value = o.image_path || ''; setPath(o.image_path || '');
+        if (old.editing) {
+            inv.editProductId = old.editing; inv.isEditMode = true; inv.id.value = old.editing;
+            inv.btnAdd.textContent = 'Save changes'; setMode(inv.mode, 'edit', 'Editing #' + old.editing);
+        }
         var map = { product_name: inv.name, category: inv.category, price: inv.price, quantity: inv.qty, date_added: inv.date };
         Object.keys(old.errors || {}).forEach(function (k) { if (map[k]) { markInvalid(map[k]); } });
     }
 
     /* =================================================================
-       EMPLOYEE SCHEDULE TAB
+       EMPLOYEE SCHEDULE
        ================================================================= */
     var sch = {
         employee: $('#txtEmployee'), schedule: $('#txtSchedule'), brk: $('#txtBreak'),
@@ -453,9 +469,9 @@
         sch.brk.value = row.breaks;
         sch.duties.value = row.duties;
         sch.dayoff.value = row.day_off || '';
+        if (window.matchMedia('(max-width: 1100px)').matches) { $('#dayoff-form').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     });
 
-    // Remember the period pickers (DateTimePicker keeps its value while the form is open)
     [['sched_start', sch.start], ['sched_end', sch.end]].forEach(function (pair) {
         var saved = store.get(pair[0]);
         if (saved && !new URLSearchParams(window.location.search).get(pair[0])) { pair[1].value = saved; }
@@ -503,7 +519,7 @@
     });
 
     /* =================================================================
-       PAYROLL MANAGEMENT TAB
+       PAYROLL
        ================================================================= */
     var pay = {
         form: $('#payroll-form'),
@@ -511,7 +527,7 @@
         days: $('#udDaysWorked'), ot: $('#udOTHours'), late: $('#udLate'), hol: $('#udHolidaysWork'),
         holType: $('#cmbHolidayType'),
         ded: $('#txtDeductionPerHour'), sss: $('#txtSSS'), ph: $('#txtPhilhealth'), pi: $('#txtPagibig'), oth: $('#txtOthers'),
-        start: $('#dtStartPeriod'), end: $('#dtEndPeriod'),
+        start: $('#dtStartPeriod'), end: $('#dtEndPeriod'), mode: $('#payMode'),
         editMode: false, selectedId: null
     };
     var role = $('#main-window').getAttribute('data-role');
@@ -523,6 +539,7 @@
         calculatePayroll();
         pay.editMode = false;
         setPayrollReadOnly(true);
+        setMode(pay.mode, 'view', 'Viewing ' + row.employee_id);
     });
 
     function fillPayroll(row) {
@@ -555,11 +572,18 @@
         var totalDeductions = num(pay.sss) + num(pay.ph) + num(pay.pi) + num(pay.oth) + lateDeduction;
         var grossPay = basicPay;
         var netPay = grossPay + holidayExtraPay + otPay - totalDeductions;
-        $('#lbEmployeeName').textContent = 'Name: ' + pay.name.value;
-        $('#lbEmployeeID').textContent = 'Employee ID: ' + pay.empId.value;
-        $('#lbGrossPay').textContent = 'Gross Pay: ' + n2(grossPay);
-        $('#lbNetPay').textContent = 'Net Pay: ' + n2(netPay);
+        $('#lbEmployeeName').textContent = pay.name.value.trim() || 'New employee';
+        $('#lbEmployeeID').textContent = (pay.empId.value.trim() ? 'Employee ID ' + pay.empId.value.trim() + ' · ' : '') +
+            'OT ' + peso(otPay) + ' · Holiday ' + peso(holidayExtraPay);
+        $('#lbGrossPay').textContent = peso(grossPay);
+        $('#lbTotalDeductions').textContent = peso(totalDeductions);
+        $('#lbNetPay').textContent = peso(netPay);
     }
+    // Live preview while typing (same formula as Add | Calculate)
+    pay.form.addEventListener('input', function (e) {
+        if (e.target.closest('.card') && e.target.id !== 'dtStartPeriod' && e.target.id !== 'dtEndPeriod') { calculatePayroll(); }
+    });
+
     function validatePayroll() {
         clearInvalid(pay.form);
         if (pay.name.value.trim() === '' || pay.empId.value.trim() === '') {
@@ -599,13 +623,15 @@
         }
         pay.editMode = true;
         setPayrollReadOnly(false);
-        MsgBox.show("Edit mode enabled. Make your changes and click 'Update Payroll' to save.", 'Edit Mode', 'information');
+        setMode(pay.mode, 'edit', 'Editing ' + pay.empId.value.trim());
+        toast("Make your changes and click 'Update' to save.", 'Edit mode enabled');
+        pay.name.focus();
     });
 
     // Update (btnUpdatePayroll_Click)
     $('#btnUpdatePayroll').addEventListener('click', function () {
         if (!pay.editMode) {
-            MsgBox.show("Please click 'Edit Payroll' first to enable editing.", 'Edit Required', 'warning');
+            MsgBox.show("Please click 'Edit' first to enable editing.", 'Edit Required', 'warning');
             return;
         }
         if (!validatePayroll()) { return; }
@@ -625,8 +651,14 @@
         sch.schedule.value = ''; sch.brk.value = ''; sch.duties.value = ''; sch.dayoff.value = '';
         pay.editMode = false;
         pay.selectedId = null;
-        setPayrollReadOnly(false); // ready for a new entry
+        setPayrollReadOnly(false);
         clearInvalid(pay.form);
+        payrollGrid.clear();
+        setMode(pay.mode, 'new', 'New entry');
+        $('#lbEmployeeName').textContent = 'No employee selected';
+        $('#lbEmployeeID').textContent = 'Select a row or fill in the form';
+        ['#lbGrossPay', '#lbTotalDeductions', '#lbNetPay'].forEach(function (s) { $(s).textContent = peso(0); });
+        pay.name.focus();
     });
 
     // Print Employee Pay Summary
@@ -648,18 +680,17 @@
         window.open('/payroll/print?start=' + pay.start.value + '&end=' + pay.end.value, '_blank');
     });
 
-    // Payroll period pickers keep their value across reloads
     [['pay_start', pay.start], ['pay_end', pay.end]].forEach(function (pair) {
         var saved = store.get(pair[0]);
         if (saved && !new URLSearchParams(window.location.search).get(pair[0])) { pair[1].value = saved; }
         pair[1].addEventListener('change', function () { store.set(pair[0], pair[1].value); loadHolidays(); });
     });
 
-    // Re-select the saved employee after Add | Calculate / Update (labels stay filled, as in C#)
+    // Re-select the saved employee after Add & calculate / Update (summary stays filled, as in C#)
     var paySel = state.getAttribute('data-payroll-selected');
     if (paySel) {
         var ptr = payrollGrid.find('data-employee-id', paySel);
-        if (ptr) { payrollGrid.select(ptr, null, true); ptr.scrollIntoView({ block: 'nearest' }); }
+        if (ptr) { payrollGrid.select(ptr, true); ptr.scrollIntoView({ block: 'nearest' }); }
         try { history.replaceState(null, '', window.location.pathname); } catch (e) { /* ignore */ }
     }
     if (old.payroll) {
@@ -671,42 +702,45 @@
         pay.pi.value = p.pagibig || ''; pay.oth.value = p.others || '';
         var pmap = { name: pay.name, employee_id: pay.empId, deduction_per_hour: pay.ded, sss: pay.sss, philhealth: pay.ph, pagibig: pay.pi, others: pay.oth };
         Object.keys(old.errors || {}).forEach(function (k) { if (pmap[k]) { markInvalid(pmap[k]); } });
+        calculatePayroll();
     }
 
     /* =================================================================
-       STATUS STRIP: Philippine holidays (external Nager.Date API via /api/holidays)
+       Holiday banner — external Nager.Date API via /api/holidays
        ================================================================= */
-    var statusEl = $('#statusHolidays');
+    var holidayEl = $('#statusHolidays');
     function fmtDate(d) {
-        var dt = new Date(d + 'T00:00:00');
-        return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
+    function chips(list) {
+        return '<div class="chips">' + list.map(function (h) {
+            return '<span class="chip"><b>' + esc(fmtDate(h.date)) + '</b> · ' + esc(h.name) + ' · ' + esc(h.type) + '</span>';
+        }).join('') + '</div>';
+    }
+    var SRC = '<div class="src">Source: Nager.Date public holiday API</div>';
     function loadHolidays() {
         var s = pay.start.value, e = pay.end.value;
         if (!s || !e) { return; }
-        statusEl.textContent = 'Checking Philippine holidays for the payroll period…';
+        holidayEl.innerHTML = '<strong>Checking Philippine holidays for this payroll period…</strong>';
         fetch('/api/holidays?start=' + s + '&end=' + e, { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
             .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
             .then(function (res) {
                 if (!res.ok) { throw new Error(res.body.error || 'Holiday service unavailable'); }
                 var list = res.body.data || [];
                 if (list.length) {
-                    statusEl.textContent = 'PH holidays in payroll period: ' + list.map(function (h) {
-                        return h.name + ' (' + fmtDate(h.date) + ', ' + h.type + ')';
-                    }).join('; ') + '  —  Nager.Date API';
-                    $('#udHolidaysWork').closest('.wf-num').title = list.length + ' holiday(s) in this payroll period';
+                    holidayEl.innerHTML = '<strong>' + list.length + ' Philippine holiday' + (list.length > 1 ? 's' : '') +
+                        ' in this payroll period</strong>' + chips(list) + SRC;
                     return;
                 }
                 return fetch('/api/holidays?year=' + s.slice(0, 4), { credentials: 'same-origin' })
                     .then(function (r) { return r.json(); })
                     .then(function (j) {
                         var next = (j.data || []).filter(function (h) { return h.date > e; })[0];
-                        statusEl.textContent = 'No PH holidays in the payroll period.' +
-                            (next ? ' Next holiday: ' + next.name + ' (' + fmtDate(next.date) + ', ' + next.type + ')' : '') +
-                            '  —  Nager.Date API';
+                        holidayEl.innerHTML = '<strong>No Philippine holidays in this payroll period.</strong>' +
+                            (next ? '<div>Next up: ' + esc(next.name) + ' on ' + esc(fmtDate(next.date)) + ' (' + esc(next.type) + ')</div>' : '') + SRC;
                     });
             })
-            .catch(function (err) { statusEl.textContent = 'Holiday API unavailable: ' + err.message; });
+            .catch(function (err) { holidayEl.innerHTML = '<strong>Holiday API unavailable.</strong><div>' + esc(err.message) + '</div>'; });
     }
     loadHolidays();
 
