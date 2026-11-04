@@ -40,6 +40,13 @@ final class PayrollInput
             }
         }
 
+        if (array_key_exists('daily_rate', $input) && ($input['daily_rate'] ?? '') !== '') {
+            $r = $input['daily_rate'];
+            if (filter_var($r, FILTER_VALIDATE_FLOAT) === false || (float) $r <= 0 || (float) $r > 100000) {
+                $errors['daily_rate'] = 'Daily rate must be a number greater than 0.';
+            }
+        }
+
         foreach (self::COUNTS as $field) {
             if (array_key_exists($field, $input)) {
                 $v = filter_var($input[$field], FILTER_VALIDATE_INT);
@@ -83,6 +90,9 @@ final class PayrollInput
         }
         if (array_key_exists('holiday_type', $input)) {
             $data['holiday_type'] = (string) ($input['holiday_type'] ?? '');
+        }
+        if (array_key_exists('daily_rate', $input) && ($input['daily_rate'] ?? '') !== '') {
+            $data['daily_rate'] = round((float) $input['daily_rate'], 2);
         }
 
         return $data;

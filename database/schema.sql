@@ -11,6 +11,7 @@ CREATE DATABASE IF NOT EXISTS butfirstsystemdb
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE butfirstsystemdb;
 
+DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS employee_shift;
 DROP TABLE IF EXISTS payroll;
 DROP TABLE IF EXISTS inventory;
@@ -36,6 +37,7 @@ CREATE TABLE payroll (
     id                  INT UNSIGNED  NOT NULL AUTO_INCREMENT,
     employee_id         VARCHAR(50)   NOT NULL,
     name                VARCHAR(100)  NOT NULL,
+    daily_rate          DECIMAL(10,2) NOT NULL DEFAULT 550.00,
     days_worked         INT           NOT NULL DEFAULT 0,
     ot_hours            INT           NOT NULL DEFAULT 0,
     late_hours          INT           NOT NULL DEFAULT 0,
@@ -70,6 +72,23 @@ CREATE TABLE employee_shift (
     CONSTRAINT employee_shift_payroll_employee_id_foreign
         FOREIGN KEY (payroll_employee_id) REFERENCES payroll (employee_id)
         ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- Login accounts (admin + one per Employee ID). Rows are created by `composer db:migrate`
+-- or `composer db:seed`, which hash the default passwords from config/config.php.
+CREATE TABLE users (
+    id             INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    username       VARCHAR(50)  NOT NULL,
+    password_hash  VARCHAR(255) NOT NULL,
+    role           VARCHAR(20)  NOT NULL DEFAULT 'employee',
+    employee_id    VARCHAR(50)  NULL,
+    created_at     TIMESTAMP    NULL,
+    updated_at     TIMESTAMP    NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY users_username_unique (username),
+    UNIQUE KEY users_employee_id_unique (employee_id),
+    CONSTRAINT users_employee_id_foreign FOREIGN KEY (employee_id) REFERENCES payroll (employee_id)
+        ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 -- Sample rows (a shortened version of database/seed.php)

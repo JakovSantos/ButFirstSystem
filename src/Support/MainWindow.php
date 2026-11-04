@@ -159,12 +159,21 @@ final class MainWindow
      */
     private static function payroll(array $query): array
     {
+        // Employees only ever see their own payroll record.
+        $user = Session::get('user') ?? [];
+        $ownId = ($user['role'] ?? '') === 'employee' ? (string) ($user['employee_id'] ?? '') : null;
+        $scope = Payroll::query()->orderBy('id');
+        if ($ownId !== null) {
+            $scope->where('employee_id', $ownId);
+        }
+
         $rows = [];
-        foreach (Payroll::query()->orderBy('id')->get() as $p) {
+        foreach ($scope->get() as $p) {
             $row = [
                 'id'                 => $p->id,
                 'name'               => $p->name,
                 'employee_id'        => $p->employee_id,
+                'daily_rate'         => Format::plain2($p->daily_rate ?: (float) \App\Core\App::config('payroll.daily_rate', 550)),
                 'days_worked'        => $p->days_worked,
                 'ot_hours'           => $p->ot_hours,
                 'late_hours'         => $p->late_hours,
@@ -187,6 +196,7 @@ final class MainWindow
             ] : null;
             $rows[] = $row + [
                 'initials'      => self::initials((string) $p->name),
+                'rate_display'  => Format::peso($p->daily_rate ?: 550),
                 'gross_display' => Format::peso($p->gross_pay),
                 'net_display'   => Format::peso($p->net_pay),
                 'ded_display'   => Format::peso($p->total_deductions),
@@ -197,6 +207,10 @@ final class MainWindow
         $all = Payroll::query()->get();
 
         return [
+            'own'          => $ownId !== null,
+            // An employee's own record is always the selected one.
+            'ownSelected'  => $ownId ?? '',
+            'defaultRate'  => Format::plain2((float) \App\Core\App::config('payroll.daily_rate', 550)),
             'rows'         => $rows,
             'count'        => count($rows),
             'totalNet'     => Format::peso($all->sum('net_pay')),

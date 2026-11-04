@@ -17,6 +17,8 @@ use App\Core\Database;
 use App\Models\EmployeeShift;
 use App\Models\Payroll;
 use App\Models\Product;
+use App\Models\User;
+use App\Support\Migrator;
 use Illuminate\Database\Schema\Blueprint;
 
 App::boot(dirname(__DIR__));
@@ -24,6 +26,7 @@ App::boot(dirname(__DIR__));
 $schema = Database::schema();
 
 $schema->disableForeignKeyConstraints();
+$schema->dropIfExists('users');
 $schema->dropIfExists('employee_shift');
 $schema->dropIfExists('payroll');
 $schema->dropIfExists('inventory');
@@ -48,6 +51,7 @@ $schema->create('payroll', static function (Blueprint $t): void {
     $t->increments('id');
     $t->string('employee_id', 50)->unique();
     $t->string('name', 100);
+    $t->decimal('daily_rate', 10, 2)->default(550);
     $t->integer('days_worked')->default(0);
     $t->integer('ot_hours')->default(0);
     $t->integer('late_hours')->default(0);
@@ -144,10 +148,14 @@ foreach ($shifts as [$pid, $name, $sched, $break, $duties, $off]) {
     ]);
 }
 
+// users table + login accounts (admin, and one per Employee ID)
+Migrator::up();
+
 printf(
-    "Seeded %d products, %d payroll records and %d shifts (%s).\n",
+    "Seeded %d products, %d payroll records, %d shifts and %d login accounts (%s).\n",
     Product::count(),
     Payroll::count(),
     EmployeeShift::count(),
+    User::count(),
     App::config('database.driver')
 );

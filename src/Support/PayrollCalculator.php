@@ -32,10 +32,12 @@ final class PayrollCalculator
      */
     public function calculate(array $p): array
     {
-        $hourlyRate = $this->dailyRate / $this->hoursPerDay;
+        // Per-employee base pay (set by the admin); falls back to the default rate.
+        $dailyRate = isset($p['daily_rate']) && (float) $p['daily_rate'] > 0 ? (float) $p['daily_rate'] : $this->dailyRate;
+        $hourlyRate = $dailyRate / $this->hoursPerDay;
 
-        $basicPay        = (int) ($p['days_worked'] ?? 0) * $this->dailyRate;
-        $holidayExtraPay = (int) ($p['holiday_present'] ?? 0) * $this->dailyRate;
+        $basicPay        = (int) ($p['days_worked'] ?? 0) * $dailyRate;
+        $holidayExtraPay = (int) ($p['holiday_present'] ?? 0) * $dailyRate;
         $otPay           = (int) ($p['ot_hours'] ?? 0) * ($hourlyRate * $this->otMultiplier);
         $lateDeduction   = (int) ($p['late_hours'] ?? 0) * (float) ($p['deduction_per_hour'] ?? 0);
 

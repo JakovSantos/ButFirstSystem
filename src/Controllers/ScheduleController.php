@@ -50,6 +50,28 @@ final class ScheduleController
         Response::redirect('/schedule' . $this->periodQuery());
     }
 
+    /** POST /schedule/{id}/name  (admin) — rename an employee everywhere */
+    public function rename(string $id): void
+    {
+        $shift = EmployeeShift::find((int) $id);
+        $name = trim(preg_replace('/\s+/', ' ', (string) ($_POST['names'] ?? '')) ?? '');
+
+        if ($shift === null) {
+            Session::flash('The selected employee no longer exists.', 'Not Found', 'warning');
+        } elseif ($name === '' || mb_strlen($name) > 100) {
+            Session::flash('Please enter a name (up to 100 characters).', 'Validation Error', 'warning');
+        } elseif (EmployeeShift::query()->where('id', '!=', $shift->id)->whereRaw('LOWER(names) = ?', [mb_strtolower($name)])->exists()) {
+            Session::flash("Another employee is already named {$name}.", 'Duplicate Name', 'warning');
+        } else {
+            $old = $shift->names;
+            $shift->names = $name;
+            $shift->save(); // EmployeeShift::save() also renames the linked payroll record
+            Session::flash("{$old} is now {$name} on the schedule and payroll.", 'Name Updated', 'information');
+        }
+
+        Response::redirect('/schedule' . $this->periodQuery());
+    }
+
     /** POST /schedule/reset-dayoff */
     public function resetDayOff(): void
     {

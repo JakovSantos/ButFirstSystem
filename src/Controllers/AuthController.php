@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Core\App;
 use App\Core\Logger;
+use App\Models\User;
 use App\Core\Response;
 use App\Core\Session;
 use App\Core\View;
@@ -17,8 +17,9 @@ final class AuthController
 {
     public function show(): void
     {
-        if (Session::get('user') !== null) {
-            Response::redirect('/inventory');
+        $user = Session::get('user');
+        if ($user !== null) {
+            Response::redirect(($user['role'] ?? '') === 'admin' ? '/inventory' : '/payroll');
         }
 
         View::display('login', [
@@ -38,23 +39,30 @@ final class AuthController
             Response::redirect('/login');
         }
 
-        // Case-insensitive username, case-sensitive password (as in C#).
-        $users = (array) App::config('users', []);
-        $key = strtolower($username);
-        $account = $users[$key] ?? null;
+        // Case-insensitive username (admin, or an Employee ID such as F-001), case-sensitive password.
+        $account = User::findByUsername($username);
 
-        if ($account === null || ! password_verify($password, (string) $account['password_hash'])) {
+        if ($account === null || ! password_verify($password, (string) $account->password_hash)) {
             Logger::info("Failed login for '{$username}'");
             Session::flashInput(['username' => $username]);
             Session::flash('Invalid username or password.', 'Login Failed', 'error');
             Response::redirect('/login');
         }
 
-        Session::regenerate();
-        Session::put('user', ['username' => $key, 'role' => $account['role']]);
-        Logger::info("Login '{$key}' ({$account['role']})");
+        $name = $account->role === 'employee' ? (string) ($account->payroll?->name ?? $account->username) : 'Admin';
 
-        Response::redirect('/inventory');
+        Session::regenerate();
+        Session::put('user', [
+            'id'          => $account->id,
+            'username'    => $account->username,
+            'role'        => $account->role,
+            'employee_id' => $account->employee_id,
+            'name'        => $name,
+        ]);
+        Logger::info("Login '{$account->username}' ({$account->role})");
+
+        // Employees land on their own payroll; admins on the inventory.
+        Response::redirect($account->role === 'admin' ? '/inventory' : '/payroll');
     }
 
     public function logout(): void

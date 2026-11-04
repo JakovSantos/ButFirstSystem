@@ -17,7 +17,12 @@ final class AuthMiddleware implements Middleware
 {
     public function handle(Request $request): void
     {
-        if (Session::get('user') !== null) {
+        $user = Session::get('user');
+        if ($user !== null && ! isset($user['id'])) {
+            Session::forget('user'); // session from before database-backed accounts: sign in again
+            $user = null;
+        }
+        if ($user !== null) {
             return;
         }
 

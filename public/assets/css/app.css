@@ -66,7 +66,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -.01em; }
     padding: 22px 16px 18px;
 }
 .brand { display: flex; align-items: center; gap: 12px; padding: 4px 8px 26px; text-decoration: none; }
-.brand img { width: 30px; height: 34px; object-fit: contain; }
+.brand img { width: 36px; height: 36px; object-fit: cover; border-radius: 9px; box-shadow: 0 0 0 1px rgba(255,255,255,.08); }
 .brand-name { display: flex; flex-direction: column; line-height: 1.05; }
 .brand-name strong { font-weight: 900; font-size: 17px; letter-spacing: .02em; }
 .brand-name span { font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: #b9b1a7; margin-top: 4px; }
@@ -402,19 +402,25 @@ h1, h2, h3 { margin: 0; letter-spacing: -.01em; }
 /* ---------------------------------------------------------------------
    Login
    --------------------------------------------------------------------- */
-.login { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); background: #fff; }
+.login { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(420px, 1fr); background: var(--paper); }
 .login-art {
-    position: relative; overflow: hidden;
-    background: radial-gradient(120% 80% at 30% 10%, #2a2622 0%, #141414 60%);
-    color: #fff; display: flex; flex-direction: column; justify-content: space-between; padding: 40px 48px;
+    position: relative; overflow: hidden; min-height: 100vh;
+    background-color: var(--ink); background-size: cover; background-position: 22% center;
+    color: #fff;
+}
+/* darken the photo so the text stays readable, heavier at the bottom */
+.login-art::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+        linear-gradient(180deg, rgba(10,10,10,.55) 0%, rgba(10,10,10,.05) 30%, rgba(10,10,10,.15) 55%, rgba(10,10,10,.9) 100%),
+        linear-gradient(90deg, rgba(10,10,10,.25), rgba(10,10,10,0) 60%);
+}
+.login-art-inner {
+    position: relative; height: 100%; min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: space-between; padding: 40px 48px;
 }
 .login-art .brand { padding: 0; }
-.login-art .arch {
-    align-self: center; width: min(300px, 70%); max-height: 56vh; object-fit: contain; object-position: top;
-    filter: drop-shadow(0 30px 60px rgba(0,0,0,.5));
-    border-radius: 999px 999px 18px 18px;
-}
-.login-art blockquote { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.3; max-width: 420px; }
+.login-art blockquote { margin: 0; font-size: 26px; font-weight: 800; line-height: 1.25; max-width: 460px; text-wrap: balance; }
 .login-art blockquote span { color: #d7b391; }
 .login-art small { display: block; color: #9d958b; margin-top: 10px; font-size: 13px; }
 .login-panel { display: grid; place-items: center; padding: 40px 24px; background: var(--paper); }
@@ -441,7 +447,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -.01em; }
 .page { max-width: 1040px; margin: 0 auto; padding: 32px 20px 60px; }
 .page .card { overflow: hidden; }
 .page-hero { background: var(--ink); color: #fff; padding: 22px 26px; display: flex; align-items: center; gap: 14px; }
-.page-hero img { width: 28px; height: 32px; object-fit: contain; }
+.page-hero img { width: 34px; height: 34px; object-fit: cover; border-radius: 8px; }
 .page-hero span { font-size: 18px; font-weight: 800; }
 .prose { padding: 22px 26px 30px; }
 .prose h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
@@ -482,8 +488,11 @@ h1, h2, h3 { margin: 0; letter-spacing: -.01em; }
     .main { padding: 20px 16px 40px; }
     .page-head h1 { font-size: 24px; }
     .login { grid-template-columns: 1fr; }
-    .login-art { padding: 24px; min-height: 0; }
-    .login-art .arch, .login-art blockquote { display: none; }
+    .login-art { min-height: 0; height: 240px; background-position: 15% 30%; }
+    .login-art-inner { min-height: 0; padding: 20px 20px 18px; }
+    .login-art blockquote { font-size: 19px; }
+    .login-art small { display: none; }
+    .login-panel { padding: 28px 20px 40px; place-items: start center; }
 }
 @media (min-width: 861px) { .mobile-nav { display: none; } }
 @media (max-width: 560px) {
