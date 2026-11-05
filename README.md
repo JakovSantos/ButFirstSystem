@@ -1,18 +1,17 @@
-# BUT FIRST, SYSTEM — PHP version
+# BUT FIRST, SYSTEM
 
-The C# Windows Forms **But First, System** (Inventory, Employee Schedule and Payroll for But First Coffee
-Floridablanca) rebuilt as a PHP web application on a DIY framework made from the three IPT10 module packages:
+Inventory, employee scheduling and payroll for **But First, Coffee — Floridablanca**, built as a PHP web
+application on **But First Framework**, a small MVC framework we assembled from three IPT10 module packages:
 
-| Package | Role |
+| Package | Role in But First Framework |
 |---|---|
 | `bramus/router` | Routing + before-route middleware |
 | `mustache/mustache` | Logic-less templates with a shared layout |
 | `illuminate/database` | Eloquent ORM used standalone (Capsule) |
 
-The business logic, rules and messages are the same as the C# app (`Form1.cs` / `Form2.cs`); the interface
-is a modern, responsive web UI in the But First Coffee brand style (black, warm paper, caramel accent, Figtree):
-sidebar navigation, stat tiles, card forms, selectable tables, a day-off board, a pay-summary panel, dialogs
-and toasts. It works on desktop, tablet and phone.
+The interface is a responsive web UI in the But First Coffee brand style (black, warm paper, caramel accent,
+Figtree): sidebar navigation, stat tiles, card forms, selectable tables, a day-off board, a pay-summary panel,
+dialogs and toasts. It works on desktop, tablet and phone.
 
 ## Requirements
 
@@ -51,8 +50,8 @@ before running `db:seed` or `db:migrate`.
 
 | URL | What |
 |---|---|
-| `/login` | Login form (C# Form1) |
-| `/inventory`, `/schedule`, `/payroll` | Main window tabs (C# Form2) |
+| `/login` | Sign-in page |
+| `/inventory`, `/schedule`, `/payroll` | The three modules |
 | `/api/...` | JSON API |
 | `/docs` | API reference page |
 
@@ -75,27 +74,27 @@ composer serve
 ```
 public/index.php        front controller (boot, routes, 404/500, run)
 config/config.php       configuration (env overrides)
-src/Core/               App, Router, View, Response, Request, Database, Session, Logger
+src/Core/               But First Framework core: App, Router, View, Response, Request,
+                        Database, Session, Logger
 src/Middleware/         AuthMiddleware, AdminMiddleware, CsrfMiddleware, RequestLogger
 src/Controllers/        Auth, Inventory, Schedule, Payroll, Docs (HTML)
 src/Controllers/Api/    Product, Payroll, Shift, Holiday (JSON)
-src/Models/             Product, Payroll, EmployeeShift (Eloquent)
+src/Models/             Product, Payroll, EmployeeShift, User (Eloquent)
 src/Support/            ProductInput, PayrollInput, PayrollCalculator, ShiftScheduler,
-                        HolidayApi, BarChart, Format, ImageUpload, MainWindow
+                        HolidayApi, BarChart, Format, ImageUpload, MainWindow, Migrator
 routes/web.php, api.php route + middleware definitions
 views/                  Mustache templates (layout, login, main, print/, errors/, partials/)
-public/assets/          winforms.css (WinForms look), app.js (C# event handlers), images
-database/               seed.php, schema.sql (MySQL), database.sqlite
+public/assets/          app.css, app.js, images and icons
+database/               seed.php, migrate.php, schema.sql (MySQL), database.sqlite
 tests/                  PHPUnit tests
 requests/api.http       ready-to-send API requests (VS Code REST Client)
-docs/                   documentation (HTML + PDF), presentation script, screenshots
 ```
 
 ## External API
 
 Philippine public holidays from **Nager.Date** (`https://date.nager.at/api/v3/PublicHolidays/{year}/PH`,
-no key). Proxied and cached by `GET /api/holidays?start=&end=` / `?year=`; shown in the status strip of the
-main window and on the payroll printouts. Failures are logged and fall back to a stale cache or a 502 JSON error.
+no key). Proxied and cached by `GET /api/holidays?start=&end=` / `?year=`; shown in the holiday banner on
+the Payroll page and on the payroll printouts. Failures are logged and fall back to a stale cache or a 502 JSON error.
 
 ## JSON API
 
@@ -113,18 +112,14 @@ Status codes: 200, 201, 400 (invalid JSON), 401, 403 (employee), 404, 409 (day o
 ## Tests
 
 ```bash
-composer test         # PHPUnit: 19 tests
+composer test         # PHPUnit: 24 tests
 ```
 
-## Differences from the C# version (on purpose)
+## Design notes
 
-- Browser equivalents replace desktop-only features: `OpenFileDialog` → file upload, `PrintDialog` → print
-  preview page + browser print dialog, `Application.Exit` → close/logout.
-- Modern web UI instead of the WinForms look; the payroll table shows the key columns (deduction details
-  appear in the form when a row is selected) and the pay summary updates live while typing.
-- A holiday banner on the Payroll page shows the external holiday API result.
+- Browser features stand in for desktop ones: file upload for images, a print-preview page plus the
+  browser print dialog for reports.
+- The payroll table shows the key columns; deduction details appear in the form when a row is selected,
+  and the pay summary updates live while typing.
 - Success messages appear as toasts; warnings, errors and confirmations stay as dialogs.
-- The payroll column that stores net pay is labelled **Net Pay** (the C# grid labelled it "Basic Pay").
-- Payroll fields are editable for a new entry after **Clear** (in C# they stayed read-only until a row was selected).
-- The shift randomizer keeps each employee's payroll link while shuffling (the C# version deleted it).
-- Date pickers display in the browser's locale format.
+- The shift randomizer keeps each employee's payroll link while shuffling.
