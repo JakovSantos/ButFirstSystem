@@ -15,8 +15,7 @@ use App\Support\MainWindow;
 use App\Support\ProductInput;
 
 /**
- * INVENTORY tab (HTML CRUD). Mirrors btnAdd_Click, btnUpdate_Click, btnRemove_Click,
- * ApplySearchFilter and btnPrintInventorySum_Click from the C# Form2.
+ * INVENTORY module (HTML CRUD): add, update, remove, search and print the summary.
  */
 final class InventoryController
 {
@@ -136,7 +135,7 @@ final class InventoryController
     }
 
     /**
-     * Validation failed: show the C# "Please correct the highlighted errors." MessageBox.
+     * Validation failed: show the "Please correct the highlighted errors." dialog.
      *
      * @param array<string, string> $errors
      */

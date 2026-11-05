@@ -17,8 +17,8 @@ use App\Support\Migrator;
 use App\Support\PayrollInput;
 
 /**
- * PAYROLL MANAGEMENT tab. Mirrors btnAddCalculate_Click_1, btnUpdatePayroll_Click,
- * btnPrintPayroll_Click and btnPrintEmpPaySum_Click from the C# Form2.
+ * PAYROLL MANAGEMENT module: add/calculate, update, print the payroll report
+ * and print an employee pay summary.
  */
 final class PayrollController
 {

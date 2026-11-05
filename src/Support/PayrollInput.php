@@ -8,7 +8,7 @@ use App\Models\Payroll;
 
 /**
  * Validation + normalization for payroll, shared by the HTML and JSON controllers.
- * Messages are the ones from the C# btnAddCalculate_Click_1 handler.
+ * Messages are shown to the user as-is.
  */
 final class PayrollInput
 {
@@ -98,7 +98,7 @@ final class PayrollInput
         return $data;
     }
 
-    /** First error message, used for the MessageBox text. */
+    /** First error message, used for the dialog text. */
     public static function firstError(array $errors): string
     {
         return (string) reset($errors);

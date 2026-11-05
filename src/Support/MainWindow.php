@@ -10,9 +10,9 @@ use App\Models\Payroll;
 use App\Models\Product;
 
 /**
- * Builds the view-model for views/main.mustache (the C# Form2 window).
+ * Builds the view-model for views/main.mustache (the main window).
  *
- * Like the WinForms TabControl, all three tabs are rendered on every request
+ * All three modules are rendered on every request
  * (INVENTORY, EMPLOYEE SCHEDULE, PAYROLL MANAGEMENT); $tab only decides which one is visible.
  */
 final class MainWindow
@@ -70,7 +70,7 @@ final class MainWindow
             ];
         }
 
-        // Summary (C# UpdateSummaryLabels): total value, most and lowest stocked.
+        // Summary: total value, most and lowest stocked.
         if ($products->isEmpty()) {
             $summary = [
                 'total' => Format::peso(0),
@@ -92,7 +92,7 @@ final class MainWindow
             ];
         }
 
-        // Chart (C# UpdateChart): top 10 by quantity.
+        // Chart: top 10 by quantity.
         $top10 = $products->sortByDesc('quantity')->take(10)->values();
         $points = $top10->map(static fn (Product $p): array => [
             'label' => $p->product_name,

@@ -8,7 +8,7 @@ use App\Support\PayrollCalculator;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The PHP calculator must give the same numbers as the C# CalculatePayroll().
+ * The payroll calculator must give the expected pay for known inputs.
  */
 final class PayrollCalculatorTest extends TestCase
 {

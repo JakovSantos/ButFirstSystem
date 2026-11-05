@@ -7,7 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Inventory item (C# table: Inventory).
+ * Inventory item (table: inventory).
  *
  * @property int    $product_id
  * @property string $product_name
@@ -36,14 +36,14 @@ final class Product extends Model
         'quantity'   => 'integer',
     ];
 
-    /** Categories from the C# cmbCategory items, in the same order. */
+    /** Product categories, in display order. */
     public const CATEGORIES = [
         'SUPPLIES', 'DAIRY', 'SYRUPS', 'COFFEE', 'TEA', 'SWEETENERS', 'TOPPINGS',
         'INGREDIENTS', 'FOODS', 'CROISSANT', 'MERCHANDISE', 'CAKES', 'COOKIES BROWNIES', 'BEVERAGES',
     ];
 
     /**
-     * LIKE search over ID, name, category and supplier (C# ApplySearchFilter).
+     * LIKE search over ID, name, category and supplier.
      */
     public static function search(?string $term): \Illuminate\Database\Eloquent\Collection
     {

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Employee shift row (C# table: EmployeeShift).
+ * Employee shift row (table: employee_shift).
  */
 final class EmployeeShift extends Model
 {

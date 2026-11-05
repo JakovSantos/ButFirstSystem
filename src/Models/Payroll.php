@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
- * Payroll record (C# table: Payroll). employee_id is the business key, e.g. "F-006".
+ * Payroll record (table: payroll). employee_id is the business key, e.g. "F-006".
  */
 final class Payroll extends Model
 {

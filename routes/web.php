@@ -19,7 +19,7 @@ Router::middleware('GET|POST|PUT|DELETE', '/.*', RequestLogger::class);
 Router::middleware('POST', '/.*', CsrfMiddleware::class);
 Router::middleware('GET|POST', '/(inventory|schedule|payroll|logout)(/.*)?', AuthMiddleware::class);
 
-// Employee restrictions from the C# login (btnUpdate, btnRemove, btnAddCalculate disabled).
+// Admin-only actions: employee accounts cannot edit products, payroll or names.
 Router::middleware('POST', '/inventory/\d+', AdminMiddleware::class);
 Router::middleware('POST', '/inventory/\d+/delete', AdminMiddleware::class);
 Router::middleware('POST', '/payroll', AdminMiddleware::class);
@@ -32,7 +32,7 @@ Router::middleware('POST', '/schedule/\d+/name', AdminMiddleware::class);
 
 /*
 |--------------------------------------------------------------------------
-| Login (C# Form1)
+| Login
 |--------------------------------------------------------------------------
 */
 Router::get('/', static function (): void {
@@ -44,7 +44,7 @@ Router::post('/logout', 'AuthController@logout');
 
 /*
 |--------------------------------------------------------------------------
-| Main window (C# Form2) - INVENTORY tab
+| Main window - INVENTORY
 |--------------------------------------------------------------------------
 */
 Router::get('/inventory', 'InventoryController@index');

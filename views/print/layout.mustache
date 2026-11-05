@@ -8,7 +8,7 @@
     <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
     <link rel="icon" href="/favicon.ico" sizes="any">
     <style>
-        /* Replica of the C# PrintDocument output (Arial, landscape where the C# code sets Landscape = true). */
+        /* Printable report layout (Arial; landscape for wide reports). */
         @page { size: {{#portrait}}portrait{{/portrait}}{{^portrait}}landscape{{/portrait}}; margin: 1in; }
         * { box-sizing: border-box; }
         body { margin: 0; background: #808080; font-family: Arial, Helvetica, sans-serif; color: #000; }
@@ -44,7 +44,7 @@
 </div>
 {{{content}}}
 <script>
-    // C# shows a PrintDialog first; the browser print dialog is the equivalent.
+    // Opens the browser print dialog.
     window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 300); });
 </script>
 </body>

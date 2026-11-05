@@ -275,7 +275,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -.01em; }
 .file-path { font-size: 12px; color: var(--muted); margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---------------------------------------------------------------------
-   Data tables (DataGridView)
+   Data tables (selectable rows)
    --------------------------------------------------------------------- */
 .toolbar { display: flex; gap: 10px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .table-wrap { overflow: auto; max-height: 520px; }
@@ -360,7 +360,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -.01em; }
 .banner .src { font-size: 12px; color: #5b7a96; margin-top: 6px; }
 
 /* ---------------------------------------------------------------------
-   Dialog (MessageBox) + toast
+   Dialog + toast
    --------------------------------------------------------------------- */
 .dialog-overlay {
     position: fixed; inset: 0; z-index: 1000;

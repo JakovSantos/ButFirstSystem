@@ -1,7 +1,7 @@
 /* =====================================================================
    BUT FIRST, SYSTEM — client behaviour
-   Port of the C# event handlers in Form1.cs / Form2.cs (same rules, same
-   messages). The PHP server re-validates everything.
+   Page behaviour for the login page and the three modules. The PHP server
+   re-validates everything.
    ===================================================================== */
 (function () {
     'use strict';
@@ -30,7 +30,7 @@
     };
 
     /* -----------------------------------------------------------------
-       MessageBox.Show(text, caption, icon, buttons)  → dialog
+       MsgBox: alert / confirmation dialog (text, caption, icon, buttons)
        ----------------------------------------------------------------- */
     var MsgBox = (function () {
         var overlay = $('#msgbox-overlay');
@@ -114,7 +114,7 @@
     });
 
     /* -----------------------------------------------------------------
-       LOGIN (Form1)
+       LOGIN PAGE
        ----------------------------------------------------------------- */
     var loginForm = $('#login-form');
     if (loginForm) {
@@ -149,7 +149,7 @@
     if (!$('#main-window')) { showFlash(); return; }
 
     /* -----------------------------------------------------------------
-       MAIN WINDOW (Form2)
+       MAIN WINDOW
        ----------------------------------------------------------------- */
     var old = parseJson($('#old-input').getAttribute('data-json'), {}) || {};
     var state = $('#page-state');
@@ -205,7 +205,7 @@
         input.closest('.stepper').classList.toggle('disabled', !enabled);
     }
 
-    /* ---------- DataGridView → selectable table ---------- */
+    /* ---------- Selectable table rows ---------- */
     function Grid(el, onCellClick) {
         var rows = $$('tbody tr[data-row]', el);
         var self = { el: el, current: null };
@@ -323,7 +323,7 @@
         if (!/[0-9.]/.test(e.key) || (e.key === '.' && inv.price.value.indexOf('.') > -1)) { e.preventDefault(); }
     });
 
-    // Add (btnAdd_Click): insert, or update when a product is selected/being edited
+    // Add: insert, or update when a product is selected/being edited
     inv.form.addEventListener('submit', function (e) {
         e.preventDefault();
         clearInvalid(inv.form);
@@ -343,7 +343,7 @@
         inv.form.submit();
     });
 
-    // Edit (btnUpdate_Click)
+    // Edit
     $('#btnUpdate').addEventListener('click', function () {
         var row = inventoryGrid.data();
         if (!row) {
@@ -359,7 +359,7 @@
         inv.name.focus();
     });
 
-    // Remove (btnRemove_Click)
+    // Remove
     $('#btnRemove').addEventListener('click', function () {
         var row = inventoryGrid.data();
         if (!row) {
@@ -374,7 +374,7 @@
         });
     });
 
-    // Browse Image (btnBrowse_Click)
+    // Browse Image
     function browse() {
         if (inv.editProductId !== -1 && !inv.isEditMode) {
             MsgBox.show("Please click 'Edit' before browsing for an image.", 'Edit Mode Required', 'information');
@@ -400,7 +400,7 @@
     // New product (ClearFields without reloading)
     $('#btnNewProduct').addEventListener('click', function () { clearFields(true); inv.name.focus(); });
 
-    // Load (btnLoad_Click) and Clear (btnClear_Inv_Click) reload the list
+    // Load and Clear reload the list
     $('#btnLoad').addEventListener('click', function () { clearFields(); window.location.href = '/inventory'; });
     $('#btnClear_Inv').addEventListener('click', function () { clearFields(); window.location.href = '/inventory'; });
 
@@ -419,7 +419,7 @@
         search.setSelectionRange(search.value.length, search.value.length);
     }
 
-    // Print Summary (btnPrintInventorySum_Click)
+    // Print Summary
     $('#btnPrintInventorySum').addEventListener('click', function () {
         if (inventoryGrid.count() === 0) {
             MsgBox.show('No inventory data to print.', 'No Data', 'information');
@@ -429,7 +429,7 @@
         window.open('/inventory/print' + (q ? '?search=' + encodeURIComponent(q) : ''), '_blank');
     });
 
-    // After add/update the C# app calls ClearFields(); highlight the saved row.
+    // After add/update the form is cleared; highlight the saved row.
     var invSel = state.getAttribute('data-inventory-selected');
     if (invSel) {
         var tr = inventoryGrid.find('data-id', invSel);
@@ -520,7 +520,7 @@
         });
     }
 
-    // Request (btnRequest_Click)
+    // Request a day off
     $('#dayoff-form').addEventListener('submit', function (e) {
         if (!selectedShift || sch.employee.value.trim() === '') {
             e.preventDefault();
@@ -538,7 +538,7 @@
 
     $('#randomize-form').addEventListener('submit', syncPeriodInputs);
 
-    // Reset Dayoff (btnResetDayoff_Click)
+    // Reset days off
     $('#btnResetDayoff').addEventListener('click', function () {
         MsgBox.show('Are you sure you want to reset all day off assignments?\nThis will clear the Day Off column for all employees.',
             'Confirm Reset', 'question', ['Yes', 'No']).then(function (r) {
@@ -546,7 +546,7 @@
         });
     });
 
-    // Print Schedule (btnPrintSched_Click)
+    // Print Schedule
     $('#btnPrintSched').addEventListener('click', function () {
         if (shiftGrid.count() === 0) {
             MsgBox.show('No schedule data to print.', 'No Data', 'information');
@@ -651,7 +651,7 @@
         pay.form.submit();
     }
 
-    // Add | Calculate (btnAddCalculate_Click_1)
+    // Add | Calculate
     pay.form.addEventListener('submit', function (e) {
         e.preventDefault();
         if (role !== 'admin') { return; }
@@ -659,7 +659,7 @@
         submitPayroll('/payroll');
     });
 
-    // Edit (btnEditPayroll_Click)
+    // Edit payroll
     on('#btnEditPayroll', 'click', function () {
         if (pay.empId.value.trim() === '') {
             MsgBox.show('Please select an employee from the payroll grid first.', 'No Selection', 'warning');
@@ -672,7 +672,7 @@
         pay.name.focus();
     });
 
-    // Update (btnUpdatePayroll_Click)
+    // Update payroll
     on('#btnUpdatePayroll', 'click', function () {
         if (!pay.editMode) {
             MsgBox.show("Please click 'Edit' first to enable editing.", 'Edit Required', 'warning');
@@ -686,7 +686,7 @@
         submitPayroll('/payroll/' + pay.selectedId);
     });
 
-    // Clear (btnClearPayroll_Click -> ClearPayrollFields)
+    // Clear the payroll form
     on('#btnClearPayroll', 'click', function () {
         pay.name.value = ''; pay.empId.value = ''; pay.rate.value = pay.rate.getAttribute('data-default');
         [pay.days, pay.ot, pay.late, pay.hol].forEach(function (i) { i.value = '0'; });
@@ -730,7 +730,7 @@
         pair[1].addEventListener('change', function () { store.set(pair[0], pair[1].value); loadHolidays(); });
     });
 
-    // Re-select the saved employee after Add & calculate / Update (summary stays filled, as in C#)
+    // Re-select the saved employee after Add & calculate / Update (summary stays filled)
     var paySel = state.getAttribute('data-payroll-selected');
     // Employees: their own record is always shown in the summary.
     var payOwn = state.getAttribute('data-payroll-own');
