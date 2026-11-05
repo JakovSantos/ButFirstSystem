@@ -24,7 +24,7 @@ return [
         'log_file' => __DIR__ . '/../storage/logs/app.log',
     ],
 
-    // Payroll constants taken from the C# CalculatePayroll() method.
+    // Payroll defaults used by PayrollCalculator.
     // daily_rate is the default for new employees; admins can change it per employee.
     'payroll' => [
         'daily_rate'    => 550,

@@ -11,7 +11,7 @@ use App\Core\Session;
 use App\Core\View;
 
 /**
- * The C# "Login" form (Form1).
+ * Sign-in and sign-out.
  */
 final class AuthController
 {

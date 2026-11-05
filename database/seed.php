@@ -32,7 +32,7 @@ $schema->dropIfExists('payroll');
 $schema->dropIfExists('inventory');
 $schema->enableForeignKeyConstraints();
 
-/* ---------- Inventory (C#: Inventory) ---------- */
+/* ---------- Inventory ---------- */
 $schema->create('inventory', static function (Blueprint $t): void {
     $t->increments('product_id');
     $t->string('product_name', 100);
@@ -46,7 +46,7 @@ $schema->create('inventory', static function (Blueprint $t): void {
     $t->index('category');
 });
 
-/* ---------- Payroll (C#: Payroll) ---------- */
+/* ---------- Payroll ---------- */
 $schema->create('payroll', static function (Blueprint $t): void {
     $t->increments('id');
     $t->string('employee_id', 50)->unique();
@@ -68,7 +68,7 @@ $schema->create('payroll', static function (Blueprint $t): void {
     $t->timestamps();
 });
 
-/* ---------- EmployeeShift (C#: EmployeeShift) ---------- */
+/* ---------- EmployeeShift ---------- */
 $schema->create('employee_shift', static function (Blueprint $t): void {
     $t->increments('id');
     $t->string('payroll_employee_id', 50)->nullable();

@@ -8,7 +8,7 @@ use App\Models\Product;
 
 /**
  * Validation + normalization for products, shared by the HTML and JSON controllers.
- * Rules come from the C# Validating handlers (txtProductName, cmbCategory, txtPrice).
+ * Validation rules for product name, category, price and quantity.
  */
 final class ProductInput
 {

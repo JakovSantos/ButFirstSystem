@@ -7,7 +7,7 @@ namespace App\Support;
 use App\Core\App;
 
 /**
- * Handles the "Browse Image" upload (replaces the C# OpenFileDialog + local file path).
+ * Handles the "Browse Image" upload (validated and stored in public/uploads).
  * Files are stored in public/uploads/products and the relative path is saved in image_path.
  */
 final class ImageUpload

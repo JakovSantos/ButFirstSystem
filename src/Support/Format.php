@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 /**
- * Formatting helpers that reproduce the .NET format strings used by the C# app.
+ * Formatting helpers for money and dates.
  */
 final class Format
 {
@@ -24,7 +24,7 @@ final class Format
         return number_format((float) $value, 2);
     }
 
-    /** .NET DateTime default ToString() for en-US, e.g. 11/4/2026 12:00:00 AM */
+    /** Long US date-time, e.g. 11/4/2026 12:00:00 AM */
     public static function dotnetDateTime(?string $date): string
     {
         if ($date === null || $date === '') {

@@ -13,7 +13,7 @@ use Illuminate\Database\Capsule\Manager as DB;
 final class ShiftScheduler
 {
     /**
-     * C# GenerateRandomSchedule: shuffle employees over the existing schedule slots
+     * Randomize: shuffle employees over the existing schedule slots
      * (Schedule / Breaks / Duties) and clear every Day Off.
      *
      * @return array{message:string,caption:string,icon:string}|null  null on success
@@ -71,7 +71,7 @@ final class ShiftScheduler
     }
 
     /**
-     * C# btnRequest_Click + GetEmployeeWithDayOff + UpdateEmployeeDayOff.
+     * Request a day off: refused if another employee already has that day.
      *
      * @return array{message:string,caption:string,icon:string,ok?:bool}
      */

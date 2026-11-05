@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Core;
 
 /**
- * Session helper: login state, CSRF token and one-shot "MessageBox" flash messages.
+ * Session helper: login state, CSRF token and one-shot flash messages.
  *
- * The flash message reproduces the C# MessageBox.Show(text, caption, buttons, icon)
- * calls, so every page can show the same Windows-style dialog after a redirect.
+ * A flash message (text, caption, icon) is shown once as a dialog or toast
+ * on the next page after a redirect.
  */
 final class Session
 {

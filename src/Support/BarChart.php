@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 /**
- * Server-side SVG version of the C# chart1 ("Top 10 Most Stocked Products"):
+ * Server-side SVG chart "Top 10 Most Stocked Products":
  * horizontal bars of quantity per product, value label at the end of each bar.
  * Drawn in the brand style and responsive (viewBox, width 100%).
  */

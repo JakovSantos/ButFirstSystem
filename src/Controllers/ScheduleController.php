@@ -14,8 +14,8 @@ use App\Support\MainWindow;
 use App\Support\ShiftScheduler;
 
 /**
- * EMPLOYEE SCHEDULE tab. Mirrors btnRandomize_Click, btnRequest_Click,
- * btnResetDayoff_Click and btnPrintSched_Click from the C# Form2.
+ * EMPLOYEE SCHEDULE module: randomize shifts, request and reset days off,
+ * rename employees and print the schedule.
  */
 final class ScheduleController
 {

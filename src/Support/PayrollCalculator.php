@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 /**
- * Port of the C# Form2.CalculatePayroll() method.
+ * Payroll formula.
  *
  *   dailyRate       = 550
  *   hourlyRate      = dailyRate / 8

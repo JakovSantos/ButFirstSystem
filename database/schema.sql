@@ -1,6 +1,6 @@
 -- =====================================================================
 --  BUT FIRST, SYSTEM  -  MySQL / MariaDB reference schema (XAMPP)
---  Port of the C# SQL Server databases ButFirstSystemDB / ButFirstManagementDB.
+--  Inventory, payroll, employee shifts and login accounts.
 --
 --  Usage (XAMPP shell):  mysql -u root < database/schema.sql
 --  then run the app with DB_DRIVER=mysql  (or simply: composer db:seed with DB_DRIVER=mysql,
@@ -16,7 +16,7 @@ DROP TABLE IF EXISTS employee_shift;
 DROP TABLE IF EXISTS payroll;
 DROP TABLE IF EXISTS inventory;
 
--- Inventory  (C#: dbo.Inventory)
+-- Inventory
 CREATE TABLE inventory (
     product_id    INT UNSIGNED  NOT NULL AUTO_INCREMENT,
     product_name  VARCHAR(100)  NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE inventory (
     KEY inventory_category_index (category)
 ) ENGINE=InnoDB;
 
--- Payroll  (C#: dbo.Payroll)  - employee_id is the business key, e.g. 'F-006'
+-- Payroll  - employee_id is the business key, e.g. 'F-006'
 CREATE TABLE payroll (
     id                  INT UNSIGNED  NOT NULL AUTO_INCREMENT,
     employee_id         VARCHAR(50)   NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE payroll (
     UNIQUE KEY payroll_employee_id_unique (employee_id)
 ) ENGINE=InnoDB;
 
--- EmployeeShift  (C#: dbo.EmployeeShift)
+-- EmployeeShift
 CREATE TABLE employee_shift (
     id                   INT UNSIGNED NOT NULL AUTO_INCREMENT,
     payroll_employee_id  VARCHAR(50)  NULL,
