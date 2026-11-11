@@ -82,6 +82,7 @@ CREATE TABLE users (
     password_hash  VARCHAR(255) NOT NULL,
     role           VARCHAR(20)  NOT NULL DEFAULT 'employee',
     employee_id    VARCHAR(50)  NULL,
+    must_change_password TINYINT(1) NOT NULL DEFAULT 0,
     created_at     TIMESTAMP    NULL,
     updated_at     TIMESTAMP    NULL,
     PRIMARY KEY (id),

@@ -27,24 +27,35 @@ composer serve        # http://localhost:8000
 ```
 
 Already have data? `composer db:migrate` upgrades the database in place (adds the per-employee
-daily rate and the `users` table with login accounts) without deleting anything.
+daily rate, the `users` table with login accounts and `users.must_change_password`) without deleting anything.
 
 ### Accounts
 
 | Who | Username | Password | Access |
 |---|---|---|---|
-| Admin | `admin` | `admin123` | Everything: edit products, payroll, daily rates and employee names |
-| Employee | their Employee ID, e.g. `F-001` | `employee123` | Views inventory and the schedule, requests days off, sees **only their own payroll** |
+| Admin | `admin` | `admin123` | Everything: products, payroll, daily rates, and adding, renaming and removing employees |
+| Employee | their Employee ID, e.g. `F-007` | starts as `employee123`, then their own | Views inventory and the schedule, requests days off, sees **only their own payroll** |
 
-Accounts are stored in the `users` table. A login is created automatically when the admin adds a new
-employee to payroll. Defaults can be changed with `ADMIN_PASSWORD` / `EMPLOYEE_DEFAULT_PASSWORD`
-before running `db:seed` or `db:migrate`.
+Accounts are stored in the `users` table. Employee IDs are not case-sensitive at sign-in (`f-007` works).
+A new employee signs in with the starting password and must choose their own password before using
+the system. Anyone can change their password later under **My account**. Defaults can be changed with
+`ADMIN_PASSWORD` / `EMPLOYEE_DEFAULT_PASSWORD` before running `db:seed` or `db:migrate`.
+
+### Managing employees (admin)
+
+The **Employees** page lists every employee with their login status:
+
+- **Add employee**: name, Employee ID (the next free ID is filled in, e.g. `F-007`) and daily rate.
+  This creates the payroll record, a schedule row and the login in one step.
+- **Rename**: changes the name everywhere (roster, day-off board, payroll and printouts).
+- **Remove**: deletes the employee's payroll record, schedule row and login.
+- **Reset password**: for an employee who forgot theirs. It goes back to the starting password, and they
+  are asked to set a new one at their next sign-in.
 
 ### Employee names and pay
 
-- **Rename an employee** (admin): Employee schedule → select the employee → edit the name → *Save name*,
-  or Payroll → *Edit* → change the name → *Update*. The new name shows on the roster, day-off board,
-  payroll and printouts.
+- **Rename an employee** (admin): Employees → *Rename*, or Employee schedule → select the employee →
+  edit the name → *Save name*, or Payroll → *Edit* → change the name → *Update*.
 - **Daily rate** (admin): each employee has their own daily rate (default ₱550). Payroll → *Edit* →
   *Daily rate* → *Update*. Basic pay, holiday pay and overtime are all calculated from it.
 
@@ -52,6 +63,8 @@ before running `db:seed` or `db:migrate`.
 |---|---|
 | `/login` | Sign-in page |
 | `/inventory`, `/schedule`, `/payroll` | The three modules |
+| `/employees` | Add, rename, remove employees and reset passwords (admin) |
+| `/account` | Change your own password |
 | `/api/...` | JSON API |
 | `/docs` | API reference page |
 
@@ -77,11 +90,12 @@ config/config.php       configuration (env overrides)
 src/Core/               But First Framework core: App, Router, View, Response, Request,
                         Database, Session, Logger
 src/Middleware/         AuthMiddleware, AdminMiddleware, CsrfMiddleware, RequestLogger
-src/Controllers/        Auth, Inventory, Schedule, Payroll, Docs (HTML)
+src/Controllers/        Auth, Inventory, Schedule, Payroll, Employee, Account, Docs (HTML)
 src/Controllers/Api/    Product, Payroll, Shift, Holiday (JSON)
 src/Models/             Product, Payroll, EmployeeShift, User (Eloquent)
 src/Support/            ProductInput, PayrollInput, PayrollCalculator, ShiftScheduler,
-                        HolidayApi, BarChart, Format, ImageUpload, MainWindow, Migrator
+                        HolidayApi, BarChart, Format, ImageUpload, MainWindow, Migrator,
+                        EmployeeManager
 routes/web.php, api.php route + middleware definitions
 views/                  Mustache templates (layout, login, main, print/, errors/, partials/)
 public/assets/          app.css, app.js, images and icons
@@ -112,7 +126,7 @@ Status codes: 200, 201, 400 (invalid JSON), 401, 403 (employee), 404, 409 (day o
 ## Tests
 
 ```bash
-composer test         # PHPUnit: 24 tests
+composer test         # PHPUnit: 31 tests
 ```
 
 ## Design notes

@@ -17,7 +17,7 @@ use App\Middleware\RequestLogger;
 */
 Router::middleware('GET|POST|PUT|DELETE', '/.*', RequestLogger::class);
 Router::middleware('POST', '/.*', CsrfMiddleware::class);
-Router::middleware('GET|POST', '/(inventory|schedule|payroll|logout)(/.*)?', AuthMiddleware::class);
+Router::middleware('GET|POST', '/(inventory|schedule|payroll|employees|account|logout)(/.*)?', AuthMiddleware::class);
 
 // Admin-only actions: employee accounts cannot edit products, payroll or names.
 Router::middleware('POST', '/inventory/\d+', AdminMiddleware::class);
@@ -29,6 +29,9 @@ Router::middleware('POST', '/payroll', AdminMiddleware::class);
 Router::middleware('POST', '/payroll/\d+', AdminMiddleware::class);
 Router::middleware('GET', '/payroll/print', AdminMiddleware::class);
 Router::middleware('POST', '/schedule/\d+/name', AdminMiddleware::class);
+
+// Managing employees (add, rename, remove, reset password) is admin-only.
+Router::middleware('GET|POST', '/employees(/.*)?', AdminMiddleware::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -75,6 +78,25 @@ Router::get('/payroll/print', 'PayrollController@print');
 Router::get('/payroll/summary', 'PayrollController@printSummary');
 Router::post('/payroll', 'PayrollController@store');
 Router::post('/payroll/(\d+)', 'PayrollController@update');
+
+/*
+|--------------------------------------------------------------------------
+| EMPLOYEES (admin) - Employee IDs look like F-007
+|--------------------------------------------------------------------------
+*/
+Router::get('/employees', 'EmployeeController@index');
+Router::post('/employees', 'EmployeeController@store');
+Router::post('/employees/([A-Za-z]+-\d+)/name', 'EmployeeController@rename');
+Router::post('/employees/([A-Za-z]+-\d+)/delete', 'EmployeeController@destroy');
+Router::post('/employees/([A-Za-z]+-\d+)/reset-password', 'EmployeeController@resetPassword');
+
+/*
+|--------------------------------------------------------------------------
+| MY ACCOUNT - change your own password
+|--------------------------------------------------------------------------
+*/
+Router::get('/account', 'AccountController@index');
+Router::post('/account/password', 'AccountController@updatePassword');
 
 /*
 |--------------------------------------------------------------------------

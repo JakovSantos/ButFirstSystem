@@ -16,6 +16,8 @@ use Illuminate\Database\Schema\Blueprint;
  *
  *  - payroll.daily_rate  : per-employee base pay (default 550, editable by admin)
  *  - users               : login accounts (admin + one account per employee ID)
+ *  - users.must_change_password : employees on a default or reset password are asked
+ *                          to set their own when they sign in
  */
 final class Migrator
 {
@@ -39,12 +41,28 @@ final class Migrator
                 $t->string('password_hash', 255);
                 $t->string('role', 20)->default('employee');
                 $t->string('employee_id', 50)->nullable()->unique();
+                $t->boolean('must_change_password')->default(false);
                 $t->timestamps();
 
                 $t->foreign('employee_id')->references('employee_id')->on('payroll')
                     ->cascadeOnDelete()->cascadeOnUpdate();
             });
             $done[] = 'Created users table';
+        }
+
+        if (! $schema->hasColumn('users', 'must_change_password')) {
+            $schema->table('users', static function (Blueprint $t): void {
+                $t->boolean('must_change_password')->default(false);
+            });
+            // Employees still on the default password are asked to choose their own.
+            $default = (string) App::config('accounts.employee_password', 'employee123');
+            foreach (User::query()->where('role', 'employee')->get() as $user) {
+                if (password_verify($default, (string) $user->password_hash)) {
+                    $user->must_change_password = true;
+                    $user->save();
+                }
+            }
+            $done[] = 'Added users.must_change_password';
         }
 
         $created = self::syncAccounts();
@@ -94,6 +112,7 @@ final class Migrator
             'password_hash' => password_hash((string) App::config('accounts.employee_password', 'employee123'), PASSWORD_DEFAULT),
             'role' => 'employee',
             'employee_id' => $employeeId,
+            'must_change_password' => true,
         ]);
 
         return true;

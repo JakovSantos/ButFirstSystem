@@ -6,7 +6,8 @@ declare(strict_types=1);
  * composer db:migrate
  *
  * Upgrades an existing database in place (no data is deleted):
- * adds payroll.daily_rate, the users table and the login accounts.
+ * adds payroll.daily_rate, the users table (with must_change_password)
+ * and the login accounts.
  */
 
 require __DIR__ . '/../vendor/autoload.php';
