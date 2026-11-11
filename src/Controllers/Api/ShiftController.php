@@ -6,6 +6,7 @@ namespace App\Controllers\Api;
 
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\Session;
 use App\Models\EmployeeShift;
 use App\Support\ShiftScheduler;
 
@@ -39,13 +40,19 @@ final class ShiftController
             return;
         }
 
+        if (! ShiftScheduler::mayChange(Session::get('user'), (string) $row->names)) {
+            Response::json(['error' => 'You can only request a day off for yourself.'], 403);
+            return;
+        }
+
         $input = Request::json();
         if ($input === null) {
             Response::json(['error' => 'Request body must be valid JSON'], 400);
             return;
         }
 
-        $result = (new ShiftScheduler())->requestDayOff((string) $row->names, (string) ($input['day_off'] ?? ''));
+        $day = $input['day_off'] ?? '';
+        $result = (new ShiftScheduler())->requestDayOff((string) $row->names, is_string($day) ? $day : '');
 
         if (! ($result['ok'] ?? false)) {
             $status = $result['caption'] === 'Day Off Already Taken' ? 409 : 422;

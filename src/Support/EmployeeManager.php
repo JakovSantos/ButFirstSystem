@@ -183,7 +183,7 @@ final class EmployeeManager
         if ($new !== $confirm) {
             return self::fail('The new passwords do not match.');
         }
-        if ($new === $current || ($user->role === 'employee' && $new === self::defaultPassword())) {
+        if ($new === $current || in_array($new, self::startingPasswords(), true)) {
             return self::fail('Please choose a new password that is different from the old one.');
         }
 
@@ -197,6 +197,12 @@ final class EmployeeManager
     public static function defaultPassword(): string
     {
         return (string) App::config('accounts.employee_password', 'employee123');
+    }
+
+    /** The well-known starting passwords, which can never be chosen as someone's own password. @return list<string> */
+    public static function startingPasswords(): array
+    {
+        return [self::defaultPassword(), (string) App::config('accounts.admin_password', 'admin123')];
     }
 
     private static function find(string $employeeId): ?Payroll

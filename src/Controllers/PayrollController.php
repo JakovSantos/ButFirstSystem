@@ -72,12 +72,9 @@ final class PayrollController
 
         $data = PayrollInput::normalize($input);
 
-        $duplicate = Payroll::query()
-            ->where('employee_id', $data['employee_id'])
-            ->where('id', '!=', $payroll->id)
-            ->exists();
-        if ($duplicate) {
-            $this->fail(['employee_id' => "Employee ID '{$data['employee_id']}' already belongs to another employee."]);
+        // The Employee ID is also the employee's login name, so it stays fixed once created.
+        if ($data['employee_id'] !== $payroll->employee_id) {
+            $this->fail(['employee_id' => "The Employee ID ({$payroll->employee_id}) cannot be changed. Add a new employee instead."]);
         }
 
         $data += self::calculator()->calculate($data);

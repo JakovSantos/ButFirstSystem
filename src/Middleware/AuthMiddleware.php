@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Middleware;
 
 use App\Core\App;
+use App\Core\Logger;
+use App\Core\RateLimiter;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
@@ -54,8 +56,21 @@ final class AuthMiddleware implements Middleware
 
         if ($request->isApi()) {
             $key = (string) ($request->server['HTTP_X_API_KEY'] ?? '');
+            $limitKey = 'api-key|' . $request->ip();
+            $max = (int) App::config('security.api_key_max_attempts', 20);
+
+            if ($key !== '' && RateLimiter::tooManyAttempts($limitKey, $max)) {
+                header('Retry-After: ' . RateLimiter::availableIn($limitKey));
+                Response::json(['error' => 'Too many wrong API keys. Try again later.'], 429);
+                exit;
+            }
+            // hash_equals compares in constant time, so the key cannot be guessed from response timing.
             if ($key !== '' && hash_equals((string) App::config('api.key'), $key)) {
                 return;
+            }
+            if ($key !== '') {
+                RateLimiter::hit($limitKey, 60);
+                Logger::info("Wrong API key from {$request->ip()}");
             }
 
             Response::json(['error' => 'Unauthenticated. Log in or send the X-API-Key header.'], 401);

@@ -8,6 +8,7 @@ use App\Models\EmployeeShift;
 use App\Models\Payroll;
 use App\Models\User;
 use App\Support\EmployeeManager;
+use App\Support\ShiftScheduler;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Database\Schema\Blueprint;
 use PHPUnit\Framework\TestCase;
@@ -112,6 +113,24 @@ final class EmployeeManagerTest extends TestCase
         self::assertSame(0, Payroll::count());
         self::assertSame(0, EmployeeShift::count());
         self::assertSame(0, User::count());
+    }
+
+    public function testStartingPasswordsCannotBeChosen(): void
+    {
+        $user = User::findByUsername('F-006');
+
+        self::assertFalse(EmployeeManager::changePassword($user, 'employee123', 'admin123', 'admin123')['ok']);
+    }
+
+    public function testEmployeesMayOnlyChangeTheirOwnDayOff(): void
+    {
+        EmployeeManager::add('F-007', 'Ana Lopez');
+        $kristine = ['role' => 'employee', 'employee_id' => 'F-006'];
+
+        self::assertTrue(ShiftScheduler::mayChange($kristine, 'Kristine Mendoza'));
+        self::assertFalse(ShiftScheduler::mayChange($kristine, 'Ana Lopez'));
+        self::assertFalse(ShiftScheduler::mayChange(['role' => 'employee', 'employee_id' => 'F-999'], 'Ana Lopez'));
+        self::assertTrue(ShiftScheduler::mayChange(['role' => 'admin'], 'Ana Lopez'));
     }
 
     public function testEmployeeSetsOwnPasswordAndAdminCanResetIt(): void

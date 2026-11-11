@@ -103,6 +103,12 @@ final class HolidayApi
         if ($s > $e) {
             [$s, $e] = [$e, $s];
         }
+        // A pay period never spans more than a year or two; a huge range would mean
+        // dozens of calls to the external service for a single request.
+        if ((int) date('Y', $e) - (int) date('Y', $s) > 1) {
+            $this->lastError = 'The date range can cover at most two calendar years.';
+            return [];
+        }
 
         $result = [];
         for ($y = (int) date('Y', $s); $y <= (int) date('Y', $e); $y++) {

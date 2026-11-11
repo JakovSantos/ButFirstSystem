@@ -33,12 +33,12 @@ daily rate, the `users` table with login accounts and `users.must_change_passwor
 
 | Who | Username | Password | Access |
 |---|---|---|---|
-| Admin | `admin` | `admin123` | Everything: products, payroll, daily rates, and adding, renaming and removing employees |
-| Employee | their Employee ID, e.g. `F-007` | starts as `employee123`, then their own | Views inventory and the schedule, requests days off, sees **only their own payroll** |
+| Admin | `admin` | starts as `admin123`, then their own | Everything: products, payroll, daily rates, and adding, renaming and removing employees |
+| Employee | their Employee ID, e.g. `F-007` | starts as `employee123`, then their own | Views inventory and the schedule, requests **their own** day off, sees **only their own payroll** |
 
 Accounts are stored in the `users` table. Employee IDs are not case-sensitive at sign-in (`f-007` works).
-A new employee signs in with the starting password and must choose their own password before using
-the system. Anyone can change their password later under **My account**. Defaults can be changed with
+Every account, admin included, that is still on its starting password must choose its own password
+before using the system (the starting passwords can never be chosen again). Anyone can change their password later under **My account**. Defaults can be changed with
 `ADMIN_PASSWORD` / `EMPLOYEE_DEFAULT_PASSWORD` before running `db:seed` or `db:migrate`.
 
 ### Managing employees (admin)
@@ -88,8 +88,9 @@ composer serve
 public/index.php        front controller (boot, routes, 404/500, run)
 config/config.php       configuration (env overrides)
 src/Core/               But First Framework core: App, Router, View, Response, Request,
-                        Database, Session, Logger
-src/Middleware/         AuthMiddleware, AdminMiddleware, CsrfMiddleware, RequestLogger
+                        Database, Session, Logger, RateLimiter
+src/Middleware/         SecurityHeaders, AuthMiddleware, AdminMiddleware, CsrfMiddleware,
+                        RequestLogger
 src/Controllers/        Auth, Inventory, Schedule, Payroll, Employee, Account, Docs (HTML)
 src/Controllers/Api/    Product, Payroll, Shift, Holiday (JSON)
 src/Models/             Product, Payroll, EmployeeShift, User (Eloquent)
@@ -103,6 +104,29 @@ database/               seed.php, migrate.php, schema.sql (MySQL), database.sqli
 tests/                  PHPUnit tests
 requests/api.http       ready-to-send API requests (VS Code REST Client)
 ```
+
+## Security
+
+The framework and the app are written defensively. In short:
+
+| Threat | Protection |
+|---|---|
+| SQL injection | Every query goes through Eloquent with bound parameters; no user input is pasted into SQL |
+| Cross-site scripting (XSS) | Mustache escapes all output; a Content-Security-Policy only allows scripts from this site (no inline scripts) |
+| Cross-site request forgery (CSRF) | Every form carries a secret session token; API writes must be same-site JSON |
+| Password guessing | 5 failed sign-ins lock that username for 15 minutes; wrong API keys are rate-limited; failed logins take as long as real ones |
+| Stolen or fixed sessions | HttpOnly + SameSite cookies, strict session mode, new session id on sign-in and password change, sign-out after 60 minutes idle |
+| Weak or shared passwords | bcrypt hashes (`password_hash`), starting passwords must be replaced, minimum length |
+| Broken access control | Admin-only routes are blocked by AdminMiddleware; employees only see their own payroll and only change their own day off |
+| Clickjacking, MIME sniffing | `X-Frame-Options: DENY`, `frame-ancestors none`, `X-Content-Type-Options: nosniff` |
+| Open redirects / header injection | Redirects only go to paths on this site; new lines are stripped |
+| Malicious uploads | Extension and real image type must match (JPG/PNG/BMP), random file names, 5 MB limit, nothing in `uploads/` can run |
+| Exposed files | `.htaccess` files make Apache serve only `public/`; the built-in server refuses `../` paths |
+| Information leaks | Error details are logged, not shown (`APP_DEBUG` is off by default); log lines cannot be forged |
+| Bad input | Every field is checked for type, length and range on the server, not only in the browser |
+
+Before putting the system where other people can reach it: set `API_KEY` to a long random value,
+keep `APP_DEBUG` off, and serve it over HTTPS (cookies then get the `Secure` flag automatically).
 
 ## External API
 
@@ -126,7 +150,7 @@ Status codes: 200, 201, 400 (invalid JSON), 401, 403 (employee), 404, 409 (day o
 ## Tests
 
 ```bash
-composer test         # PHPUnit: 31 tests
+composer test         # PHPUnit: 40 tests
 ```
 
 ## Design notes

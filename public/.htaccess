@@ -1,0 +1,13 @@
+# Apache: serve real files from public/, send everything else to the front controller.
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Hidden files (.htaccess, .env, ...) are never served.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

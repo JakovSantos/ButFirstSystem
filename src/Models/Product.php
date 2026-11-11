@@ -48,7 +48,7 @@ final class Product extends Model
     public static function search(?string $term): \Illuminate\Database\Eloquent\Collection
     {
         $query = self::query()->orderBy('product_id');
-        $term = trim((string) $term);
+        $term = mb_substr(trim((string) $term), 0, 100); // the value is bound as a parameter, never pasted into SQL
 
         if ($term !== '') {
             $like = '%' . $term . '%';

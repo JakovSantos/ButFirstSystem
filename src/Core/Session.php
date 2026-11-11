@@ -18,13 +18,34 @@ final class Session
             return;
         }
 
+        // Only accept session ids this server created, only from the cookie (never the URL).
+        ini_set('session.use_strict_mode', '1');
+        ini_set('session.use_only_cookies', '1');
+        ini_set('session.use_trans_sid', '0');
+
+        $https = ! empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off';
         session_name('butfirst_session');
         session_set_cookie_params([
-            'httponly' => true,
-            'samesite' => 'Lax',
+            'path'     => '/',
+            'httponly' => true,  // JavaScript cannot read the cookie
+            'secure'   => $https, // sent over HTTPS only when the site uses HTTPS
+            'samesite' => 'Lax', // not sent with form posts from other sites
         ]);
         session_start();
+
+        // Sign out after a period without activity.
+        $now = time();
+        $last = (int) ($_SESSION['_last_activity'] ?? $now);
+        if (isset($_SESSION['user']) && $now - $last > self::IDLE_TIMEOUT) {
+            $_SESSION = [];
+            session_regenerate_id(true);
+            self::flash('You were signed out after ' . intdiv(self::IDLE_TIMEOUT, 60) . ' minutes of inactivity.', 'Session Expired', 'information');
+        }
+        $_SESSION['_last_activity'] = $now;
     }
+
+    /** Seconds without a request before a signed-in user is signed out. */
+    public const IDLE_TIMEOUT = 60 * 60;
 
     public static function get(string $key, mixed $default = null): mixed
     {
@@ -49,11 +70,16 @@ final class Session
         }
     }
 
+    /**
+     * New session id and new CSRF token. Called on sign-in and password change so a
+     * session id or token captured before cannot be reused (session fixation).
+     */
     public static function regenerate(): void
     {
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_regenerate_id(true);
         }
+        unset($_SESSION['_csrf']);
     }
 
     /**

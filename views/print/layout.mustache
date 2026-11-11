@@ -38,14 +38,11 @@
 </head>
 <body>
 <div class="toolbar">
-    <button type="button" onclick="window.print()">Print…</button>
-    <button type="button" onclick="window.close()">Close</button>
+    <button type="button" id="btnPrintNow">Print…</button>
+    <button type="button" id="btnClosePrint">Close</button>
     <span>Print Preview - {{title}}</span>
 </div>
 {{{content}}}
-<script>
-    // Opens the browser print dialog.
-    window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 300); });
-</script>
+<script src="/assets/js/print.js"></script>
 </body>
 </html>

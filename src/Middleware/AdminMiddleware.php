@@ -34,7 +34,7 @@ final class AdminMiddleware implements Middleware
         }
 
         Session::flash('This action is not allowed for employee accounts.', 'Access Denied', 'warning');
-        $back = parse_url((string) ($request->server['HTTP_REFERER'] ?? '/inventory'), PHP_URL_PATH) ?: '/inventory';
-        Response::redirect($back);
+        // back() only follows same-site paths, so a forged Referer cannot redirect to another site.
+        Response::back($request->server, '/inventory');
     }
 }

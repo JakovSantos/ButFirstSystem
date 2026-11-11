@@ -43,6 +43,7 @@ final class AccountController
             Response::redirect('/account');
         }
 
+        Session::regenerate(); // new session id + CSRF token after a credential change
         Logger::info("Password changed for '{$user->username}'");
         Session::flash($result['message'], 'Password Changed', 'information');
         Response::redirect($user->role === 'admin' ? '/inventory' : '/payroll');
