@@ -37,8 +37,11 @@ final class ImageUpload
             return ['path' => null, 'error' => 'Image Files (*.jpg; *.jpeg; *.png; *.bmp) only.'];
         }
 
+        // The file contents must really be a JPEG, PNG or BMP image, matching its extension
+        // (so a script renamed to .jpg is refused).
         $info = @getimagesize((string) $file['tmp_name']);
-        if ($info === false) {
+        $types = ['jpg' => IMAGETYPE_JPEG, 'jpeg' => IMAGETYPE_JPEG, 'png' => IMAGETYPE_PNG, 'bmp' => IMAGETYPE_BMP];
+        if ($info === false || ($info[2] ?? null) !== ($types[$ext] ?? -1)) {
             return ['path' => null, 'error' => 'The selected file is not a valid image.'];
         }
 

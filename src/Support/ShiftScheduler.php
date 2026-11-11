@@ -71,6 +71,25 @@ final class ShiftScheduler
     }
 
     /**
+     * May this signed-in user change the day off of the employee named $name?
+     * Admins and API-key callers (no session user) may change anyone's; an employee only their own.
+     *
+     * @param array<string, mixed>|null $user  the session user
+     */
+    public static function mayChange(?array $user, string $name): bool
+    {
+        if ($user === null || ($user['role'] ?? '') === 'admin') {
+            return true;
+        }
+
+        $own = EmployeeShift::query()
+            ->where('payroll_employee_id', (string) ($user['employee_id'] ?? ''))
+            ->value('names');
+
+        return $own !== null && $own !== '' && mb_strtolower((string) $own) === mb_strtolower($name);
+    }
+
+    /**
      * Request a day off: refused if another employee already has that day.
      *
      * @return array{message:string,caption:string,icon:string,ok?:bool}

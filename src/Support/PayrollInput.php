@@ -14,6 +14,7 @@ final class PayrollInput
 {
     private const MONEY = ['deduction_per_hour', 'sss', 'philhealth', 'pagibig', 'others'];
     private const COUNTS = ['days_worked', 'ot_hours', 'late_hours', 'holiday_present'];
+    private const MAX_MONEY = 1000000;
 
     /**
      * @param array<string, mixed> $input
@@ -30,11 +31,19 @@ final class PayrollInput
                 }
             }
         }
+        if (! isset($errors['name']) && array_key_exists('name', $input) && mb_strlen(trim((string) $input['name'])) > 100) {
+            $errors['name'] = 'Employee Name can be at most 100 characters.';
+        }
+        if (! isset($errors['employee_id']) && array_key_exists('employee_id', $input)
+            && ! EmployeeManager::isValidId(EmployeeManager::normalizeId((string) $input['employee_id']))) {
+            $errors['employee_id'] = 'Employee ID must look like F-007.';
+        }
 
         foreach (self::MONEY as $field) {
             if (! $partial || array_key_exists($field, $input)) {
                 $v = $input[$field] ?? null;
-                if ($v === null || trim((string) $v) === '' || filter_var($v, FILTER_VALIDATE_FLOAT) === false || (float) $v < 0) {
+                if (! is_scalar($v) || trim((string) $v) === '' || filter_var($v, FILTER_VALIDATE_FLOAT) === false
+                    || (float) $v < 0 || (float) $v > self::MAX_MONEY) {
                     $errors[$field] = 'Please enter valid numeric values for all deduction fields.';
                 }
             }
@@ -42,14 +51,14 @@ final class PayrollInput
 
         if (array_key_exists('daily_rate', $input) && ($input['daily_rate'] ?? '') !== '') {
             $r = $input['daily_rate'];
-            if (filter_var($r, FILTER_VALIDATE_FLOAT) === false || (float) $r <= 0 || (float) $r > 100000) {
+            if (! is_scalar($r) || filter_var($r, FILTER_VALIDATE_FLOAT) === false || (float) $r <= 0 || (float) $r > 100000) {
                 $errors['daily_rate'] = 'Daily rate must be a number greater than 0.';
             }
         }
 
         foreach (self::COUNTS as $field) {
             if (array_key_exists($field, $input)) {
-                $v = filter_var($input[$field], FILTER_VALIDATE_INT);
+                $v = is_scalar($input[$field]) ? filter_var($input[$field], FILTER_VALIDATE_INT) : false;
                 if ($v === false || $v < 0 || $v > 100) {
                     $errors[$field] = 'Day and hour counts must be whole numbers between 0 and 100.';
                 }
@@ -73,10 +82,11 @@ final class PayrollInput
     {
         $data = [];
 
-        foreach (['name', 'employee_id'] as $field) {
-            if (array_key_exists($field, $input)) {
-                $data[$field] = trim((string) $input[$field]);
-            }
+        if (array_key_exists('name', $input)) {
+            $data['name'] = EmployeeManager::cleanName((string) $input['name']);
+        }
+        if (array_key_exists('employee_id', $input)) {
+            $data['employee_id'] = EmployeeManager::normalizeId((string) $input['employee_id']);
         }
         foreach (self::COUNTS as $field) {
             if (array_key_exists($field, $input)) {

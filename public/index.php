@@ -7,9 +7,13 @@ declare(strict_types=1);
  */
 
 // Let the PHP built-in server serve static files (css, js, images) directly.
+// Only real files inside public/ are served (no "../" escapes, no hidden files such as .htaccess).
 if (PHP_SAPI === 'cli-server') {
-    $file = __DIR__ . (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/');
-    if ($file !== __DIR__ . '/' && is_file($file)) {
+    $path = rawurldecode(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/');
+    $file = realpath(__DIR__ . $path);
+    $root = realpath(__DIR__) . DIRECTORY_SEPARATOR;
+    if ($file !== false && str_starts_with($file, $root) && is_file($file)
+        && ! str_starts_with(basename($file), '.') && ! str_ends_with(strtolower($file), '.php')) {
         return false;
     }
 }

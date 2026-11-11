@@ -41,8 +41,14 @@ final class ScheduleController
     /** POST /schedule/dayoff  (Request) */
     public function requestDayOff(): void
     {
-        $name = trim((string) ($_POST['names'] ?? ''));
-        $day = trim((string) ($_POST['day_off'] ?? ''));
+        $name = is_string($_POST['names'] ?? null) ? trim($_POST['names']) : '';
+        $day = is_string($_POST['day_off'] ?? null) ? trim($_POST['day_off']) : '';
+
+        // Employees may only request their own day off; the admin may set anyone's.
+        if (! ShiftScheduler::mayChange(Session::get('user'), $name)) {
+            Session::flash('You can only request a day off for yourself.', 'Access Denied', 'warning');
+            Response::redirect('/schedule' . $this->periodQuery());
+        }
 
         $result = (new ShiftScheduler())->requestDayOff($name, $day);
         Session::flash($result['message'], $result['caption'], $result['icon']);
@@ -108,9 +114,11 @@ final class ScheduleController
 
     private function periodQuery(): string
     {
+        // Only real dates are carried over into the redirect URL.
+        $date = static fn (mixed $v): ?string => is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) ? $v : null;
         $q = array_filter([
-            'sched_start' => $_POST['sched_start'] ?? null,
-            'sched_end'   => $_POST['sched_end'] ?? null,
+            'sched_start' => $date($_POST['sched_start'] ?? null),
+            'sched_end'   => $date($_POST['sched_end'] ?? null),
         ]);
 
         return $q ? '?' . http_build_query($q) : '';

@@ -1,0 +1,14 @@
+# Apache (XAMPP): only the public/ folder may be reached from the browser.
+# Without this, files such as database/database.sqlite, storage/logs/app.log,
+# config/ and .git/ could be downloaded directly.
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^$ public/ [L]
+    RewriteRule ((?s).*) public/$1 [L]
+</IfModule>
+
+<IfModule !mod_rewrite.c>
+    Require all denied
+</IfModule>

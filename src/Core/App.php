@@ -27,6 +27,12 @@ final class App
 
         date_default_timezone_set((string) self::config('app.timezone', 'UTC'));
 
+        // Error details go to the log, never to the visitor, unless debug mode is on.
+        $debug = (bool) self::config('app.debug', false);
+        ini_set('display_errors', $debug ? '1' : '0');
+        ini_set('log_errors', '1');
+        error_reporting(E_ALL);
+
         self::ensureStorage();
 
         Database::boot(self::config('database'));

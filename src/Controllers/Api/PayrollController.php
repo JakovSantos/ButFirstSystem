@@ -93,7 +93,14 @@ final class PayrollController
             return;
         }
 
-        $row->fill(PayrollInput::normalize($input));
+        $data = PayrollInput::normalize($input);
+        if (isset($data['employee_id']) && $data['employee_id'] !== $row->employee_id) {
+            // The Employee ID is also the login name; it is changed only from the Employees page.
+            Response::json(['errors' => ['employee_id' => 'The Employee ID cannot be changed here.']], 422);
+            return;
+        }
+
+        $row->fill($data);
         $row->fill(WebPayroll::calculator()->calculate($row->toArray()));
         $row->save();
 
@@ -108,7 +115,9 @@ final class PayrollController
             return;
         }
 
-        $row->delete();
-        Response::json(['message' => 'Payroll record deleted']);
+        // Same as Remove on the Employees page: payroll record, schedule row and login go together,
+        // so no orphaned login is left behind.
+        $result = \App\Support\EmployeeManager::remove((string) $row->employee_id);
+        Response::json(['message' => $result['message']], $result['ok'] ? 200 : 404);
     }
 }

@@ -236,13 +236,13 @@
                         <input type="hidden" name="_token" value="{{csrfToken}}">
                         <input type="hidden" name="sched_start" class="js-sched-start">
                         <input type="hidden" name="sched_end" class="js-sched-end">
-                        <button type="button" class="btn btn-outline" id="btnResetDayoff">Reset days off</button>
+                        <button type="button" class="btn btn-outline" id="btnResetDayoff" {{#isEmployee}}disabled title="Only the admin can do this"{{/isEmployee}}>Reset days off</button>
                     </form>
                     <form id="randomize-form" method="post" action="/schedule/randomize">
                         <input type="hidden" name="_token" value="{{csrfToken}}">
                         <input type="hidden" name="sched_start" class="js-sched-start">
                         <input type="hidden" name="sched_end" class="js-sched-end">
-                        <button type="submit" class="btn btn-primary" id="btnRandomize">
+                        <button type="submit" class="btn btn-primary" id="btnRandomize" {{#isEmployee}}disabled title="Only the admin can do this"{{/isEmployee}}>
                             <svg class="ico" viewBox="0 0 24 24"><path d="M3 7h3c4 0 6 10 10 10h5M3 17h3c1.5 0 2.7-1.4 3.8-3M14 7h7M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>Randomize shifts</button>
                     </form>
                 </div>

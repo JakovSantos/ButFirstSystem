@@ -54,14 +54,6 @@ final class Migrator
             $schema->table('users', static function (Blueprint $t): void {
                 $t->boolean('must_change_password')->default(false);
             });
-            // Employees still on the default password are asked to choose their own.
-            $default = (string) App::config('accounts.employee_password', 'employee123');
-            foreach (User::query()->where('role', 'employee')->get() as $user) {
-                if (password_verify($default, (string) $user->password_hash)) {
-                    $user->must_change_password = true;
-                    $user->save();
-                }
-            }
             $done[] = 'Added users.must_change_password';
         }
 
@@ -70,7 +62,36 @@ final class Migrator
             $done[] = "Created {$created} login account(s)";
         }
 
+        $flagged = self::flagStartingPasswords();
+        if ($flagged > 0) {
+            $done[] = "{$flagged} account(s) still on a starting password will be asked to set their own";
+        }
+
         return $done;
+    }
+
+    /**
+     * Any account (admin included) still using a well-known starting password
+     * (admin123 / employee123) must choose its own at the next sign-in.
+     */
+    public static function flagStartingPasswords(): int
+    {
+        $defaults = [
+            'admin'    => (string) App::config('accounts.admin_password', 'admin123'),
+            'employee' => (string) App::config('accounts.employee_password', 'employee123'),
+        ];
+        $flagged = 0;
+
+        foreach (User::query()->where('must_change_password', false)->get() as $user) {
+            $default = $defaults[$user->role] ?? null;
+            if ($default !== null && password_verify($default, (string) $user->password_hash)) {
+                $user->must_change_password = true;
+                $user->save();
+                $flagged++;
+            }
+        }
+
+        return $flagged;
     }
 
     /**
@@ -87,6 +108,7 @@ final class Migrator
                 'username' => (string) ($defaults['admin_username'] ?? 'admin'),
                 'password_hash' => password_hash((string) ($defaults['admin_password'] ?? 'admin123'), PASSWORD_DEFAULT),
                 'role' => 'admin',
+                'must_change_password' => true,
             ]);
             $created++;
         }

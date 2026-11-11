@@ -23,6 +23,8 @@ final class ProductInput
         if (! $partial || array_key_exists('product_name', $input)) {
             if (! is_string($input['product_name'] ?? null) || trim($input['product_name']) === '') {
                 $errors['product_name'] = 'Product Name cannot be empty.';
+            } elseif (mb_strlen(trim($input['product_name'])) > 100) {
+                $errors['product_name'] = 'Product Name can be at most 100 characters.';
             }
         }
 
@@ -34,32 +36,54 @@ final class ProductInput
 
         if (! $partial || array_key_exists('price', $input)) {
             $price = $input['price'] ?? null;
-            if ($price === null || trim((string) $price) === '') {
+            if ($price === null || (is_scalar($price) && trim((string) $price) === '')) {
                 $errors['price'] = 'Price cannot be empty.';
-            } elseif (filter_var($price, FILTER_VALIDATE_FLOAT) === false || (float) $price < 0) {
+            } elseif (! is_scalar($price) || filter_var($price, FILTER_VALIDATE_FLOAT) === false || (float) $price < 0) {
                 $errors['price'] = 'Please enter a valid decimal value for Price.';
+            } elseif ((float) $price > self::MAX_PRICE) {
+                $errors['price'] = 'Price can be at most ' . number_format(self::MAX_PRICE, 2) . '.';
             }
         }
 
         if (array_key_exists('quantity', $input)) {
-            $qty = filter_var($input['quantity'], FILTER_VALIDATE_INT);
+            $qty = is_scalar($input['quantity']) ? filter_var($input['quantity'], FILTER_VALIDATE_INT) : false;
             if ($qty === false || $qty < 0 || $qty > 1000) {
                 $errors['quantity'] = 'Quantity must be a whole number between 0 and 1000.';
             }
         }
 
         if (array_key_exists('date_added', $input) && $input['date_added'] !== null && $input['date_added'] !== '') {
-            $d = \DateTime::createFromFormat('Y-m-d', (string) $input['date_added']);
+            $d = is_string($input['date_added']) ? \DateTime::createFromFormat('Y-m-d', $input['date_added']) : false;
             if ($d === false || $d->format('Y-m-d') !== $input['date_added']) {
                 $errors['date_added'] = 'Date Added must be a valid date (YYYY-MM-DD).';
             }
         }
 
-        if (array_key_exists('supplier', $input) && $input['supplier'] !== null && ! is_string($input['supplier'])) {
-            $errors['supplier'] = 'The supplier must be a string.';
+        if (array_key_exists('supplier', $input) && $input['supplier'] !== null) {
+            if (! is_string($input['supplier'])) {
+                $errors['supplier'] = 'The supplier must be a string.';
+            } elseif (mb_strlen(trim($input['supplier'])) > 100) {
+                $errors['supplier'] = 'Supplier can be at most 100 characters.';
+            }
+        }
+
+        // image_path may only point at an image that was uploaded to public/uploads/products.
+        if (array_key_exists('image_path', $input) && $input['image_path'] !== null && $input['image_path'] !== '') {
+            if (! is_string($input['image_path']) || ! self::isUploadedImagePath($input['image_path'])) {
+                $errors['image_path'] = 'The image must be one uploaded with Browse Image.';
+            }
         }
 
         return $errors;
+    }
+
+    public const MAX_PRICE = 1000000;
+
+    /** True for "uploads/products/<name>.jpg|jpeg|png|bmp" with a safe file name (no "..", no URL). */
+    public static function isUploadedImagePath(string $path): bool
+    {
+        return preg_match('#^/?uploads/products/[a-z0-9][a-z0-9._-]{0,150}\.(jpe?g|png|bmp)$#i', $path) === 1
+            && ! str_contains($path, '..');
     }
 
     /**

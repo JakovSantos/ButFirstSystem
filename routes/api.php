@@ -14,6 +14,7 @@ use App\Middleware\AuthMiddleware;
 */
 Router::middleware('GET|POST|PUT|DELETE', '/api/(products|payroll|shifts|holidays)(/.*)?', AuthMiddleware::class);
 Router::middleware('POST|PUT|DELETE', '/api/(products|payroll)(/.*)?', AdminMiddleware::class);
+Router::middleware('POST', '/api/shifts/randomize', AdminMiddleware::class);
 
 Router::get('/api/health', static function (): void {
     Response::json([

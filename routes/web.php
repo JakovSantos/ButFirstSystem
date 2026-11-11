@@ -9,14 +9,16 @@ use App\Middleware\AdminMiddleware;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\CsrfMiddleware;
 use App\Middleware\RequestLogger;
+use App\Middleware\SecurityHeaders;
 
 /*
 |--------------------------------------------------------------------------
 | Middleware (runs before the matching routes, in this order)
 |--------------------------------------------------------------------------
 */
+Router::middleware('GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS', '/.*', SecurityHeaders::class);
 Router::middleware('GET|POST|PUT|DELETE', '/.*', RequestLogger::class);
-Router::middleware('POST', '/.*', CsrfMiddleware::class);
+Router::middleware('POST|PUT|PATCH|DELETE', '/.*', CsrfMiddleware::class);
 Router::middleware('GET|POST', '/(inventory|schedule|payroll|employees|account|logout)(/.*)?', AuthMiddleware::class);
 
 // Admin-only actions: employee accounts cannot edit products, payroll or names.
@@ -29,6 +31,8 @@ Router::middleware('POST', '/payroll', AdminMiddleware::class);
 Router::middleware('POST', '/payroll/\d+', AdminMiddleware::class);
 Router::middleware('GET', '/payroll/print', AdminMiddleware::class);
 Router::middleware('POST', '/schedule/\d+/name', AdminMiddleware::class);
+// Shuffling the roster and clearing everyone's days off affect all employees: admin-only.
+Router::middleware('POST', '/schedule/(randomize|reset-dayoff)', AdminMiddleware::class);
 
 // Managing employees (add, rename, remove, reset password) is admin-only.
 Router::middleware('GET|POST', '/employees(/.*)?', AdminMiddleware::class);

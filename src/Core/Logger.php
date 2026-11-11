@@ -22,7 +22,10 @@ final class Logger
     private static function write(string $level, string $message): void
     {
         $file = (string) App::config('app.log_file', App::basePath('storage/logs/app.log'));
-        $line = sprintf("[%s] %s %s\n", date('Y-m-d H:i:s'), $level, $message);
+        // Control characters (new lines etc.) are replaced, so a username such as
+        // "x\n[INFO] Login 'admin'" cannot forge extra lines in the log.
+        $message = preg_replace('/[\x00-\x1F\x7F]/u', ' ', $message) ?? '';
+        $line = sprintf("[%s] %s %s\n", date('Y-m-d H:i:s'), $level, mb_substr($message, 0, 1000));
         @file_put_contents($file, $line, FILE_APPEND | LOCK_EX);
     }
 }

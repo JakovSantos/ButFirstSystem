@@ -20,7 +20,8 @@ return [
         'prepared_by' => 'Dr. Ben B. Pagaduan, General Manager',
         'base_url' => $env('APP_URL', 'http://localhost:8000'),
         'timezone' => $env('APP_TIMEZONE', 'Asia/Manila'),
-        'debug'    => filter_var($env('APP_DEBUG', 'true'), FILTER_VALIDATE_BOOL),
+        // Off by default so error details are never shown to visitors; set APP_DEBUG=true while developing.
+        'debug'    => filter_var($env('APP_DEBUG', 'false'), FILTER_VALIDATE_BOOL),
         'log_file' => __DIR__ . '/../storage/logs/app.log',
     ],
 
@@ -67,8 +68,18 @@ return [
 
     // Our own JSON API: callers authenticate with a logged-in session
     // or with the header  X-API-Key: <key>  (handy for curl / Postman).
+    // The built-in key is for local development only: set API_KEY to a long random value
+    // (e.g. php -r "echo bin2hex(random_bytes(24));") anywhere other people can reach.
     'api' => [
         'key' => $env('API_KEY', 'butfirst-dev-key'),
+    ],
+
+    // Brute-force protection: after this many failed sign-ins for one username from one
+    // address, that username is locked for lockout_seconds.
+    'security' => [
+        'login_max_attempts' => 5,
+        'login_lockout_seconds' => 15 * 60,
+        'api_key_max_attempts' => 20,   // wrong X-API-Key values per address per minute
     ],
 
     'uploads' => [

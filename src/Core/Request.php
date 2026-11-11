@@ -74,8 +74,50 @@ final class Request
         return $data !== [] && array_is_list($data) ? null : $data;
     }
 
+    /**
+     * The client address. Only REMOTE_ADDR is used: X-Forwarded-For can be set by
+     * anyone, so trusting it would let an attacker dodge the login rate limit.
+     */
     public function ip(): string
     {
         return (string) ($this->server['REMOTE_ADDR'] ?? '-');
+    }
+
+    public function isHttps(): bool
+    {
+        $https = strtolower((string) ($this->server['HTTPS'] ?? ''));
+
+        return ($https !== '' && $https !== 'off') || (string) ($this->server['SERVER_PORT'] ?? '') === '443';
+    }
+
+    /** True when the request body is declared as JSON (browsers cannot send this cross-site without CORS). */
+    public function isJson(): bool
+    {
+        return str_starts_with(strtolower((string) ($this->server['CONTENT_TYPE'] ?? '')), 'application/json');
+    }
+
+    /**
+     * False when the browser says the request came from another site
+     * (Origin or Referer header with a different host). Missing headers count as same-origin
+     * so curl / Postman still work; those callers have no victim's cookie to abuse.
+     */
+    public function isSameOrigin(): bool
+    {
+        $host = strtolower((string) ($this->server['HTTP_HOST'] ?? ''));
+        $source = (string) ($this->server['HTTP_ORIGIN'] ?? $this->server['HTTP_REFERER'] ?? '');
+        if ($source === '' || $host === '') {
+            return true;
+        }
+        if ($source === 'null') {
+            return false;
+        }
+
+        $parts = parse_url($source);
+        if (! is_array($parts) || ! isset($parts['host'])) {
+            return false;
+        }
+        $origin = strtolower($parts['host']) . (isset($parts['port']) ? ':' . $parts['port'] : '');
+
+        return $origin === $host;
     }
 }

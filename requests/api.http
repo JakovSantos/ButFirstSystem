@@ -85,6 +85,9 @@ Content-Type: application/json
 ### Randomize shifts
 POST {{base}}/api/shifts/randomize
 X-API-Key: {{key}}
+Content-Type: application/json
+
+{}
 
 ### External API: PH holidays for a year (Nager.Date)
 GET {{base}}/api/holidays?year=2026
