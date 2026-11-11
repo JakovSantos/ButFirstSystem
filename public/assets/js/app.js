@@ -158,6 +158,11 @@
     $$('.nav-item[data-tab]').forEach(function (link) {
         link.addEventListener('click', function (e) {
             e.preventDefault();
+            // A new or reset account must set its own password before using the other modules.
+            if (state.hasAttribute('data-must-change') && link.getAttribute('data-tab') !== 'account') {
+                MsgBox.show('Please set your own password before you continue.', 'Set Your Password', 'information');
+                return;
+            }
             selectTab(link.getAttribute('data-tab'));
         });
     });
@@ -755,6 +760,79 @@
         var pmap = { name: pay.name, employee_id: pay.empId, daily_rate: pay.rate, deduction_per_hour: pay.ded, sss: pay.sss, philhealth: pay.ph, pagibig: pay.pi, others: pay.oth };
         Object.keys(old.errors || {}).forEach(function (k) { if (pmap[k]) { markInvalid(pmap[k]); } });
         calculatePayroll();
+    }
+
+    /* =================================================================
+       EMPLOYEES (admin) and MY ACCOUNT
+       ================================================================= */
+    // Forms with data-confirm ask first (reset password, remove employee).
+    $$('form[data-confirm]').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            if (form.dataset.confirmed) { return; }
+            e.preventDefault();
+            var yes = form.hasAttribute('data-danger') ? 'Remove' : 'Yes';
+            MsgBox.show(form.getAttribute('data-confirm'), form.getAttribute('data-caption') || 'Confirm',
+                form.hasAttribute('data-danger') ? 'warning' : 'question', [yes, 'Cancel']).then(function (r) {
+                if (r === yes) { form.dataset.confirmed = '1'; form.submit(); }
+            });
+        });
+    });
+
+    // Rename: show the inline name field under the employee's row.
+    $$('.js-rename').forEach(function (b) {
+        b.addEventListener('click', function () {
+            $$('.rename-row').forEach(function (r) { r.hidden = true; });
+            var row = document.getElementById(b.getAttribute('data-target'));
+            if (!row) { return; }
+            row.hidden = false;
+            var input = $('input[name="name"]', row);
+            input.focus();
+            input.select();
+        });
+    });
+    $$('.js-rename-cancel').forEach(function (b) {
+        b.addEventListener('click', function () { b.closest('.rename-row').hidden = true; });
+    });
+
+    var empForm = $('#employee-form');
+    if (empForm) {
+        var emp = { name: $('#txtNewEmpName'), id: $('#txtNewEmpId'), rate: $('#txtNewEmpRate') };
+        if (old.employee) {
+            emp.name.value = old.employee.name || '';
+            emp.id.value = old.employee.employee_id || emp.id.value;
+            emp.rate.value = old.employee.daily_rate || emp.rate.value;
+        }
+        empForm.addEventListener('submit', function (e) {
+            clearInvalid(empForm);
+            emp.id.value = emp.id.value.trim().toUpperCase();
+            var msg = null, bad = null;
+            if (emp.name.value.trim() === '') { msg = 'Please enter the employee\'s name.'; bad = emp.name; }
+            else if (!/^[A-Z]{1,5}-\d{1,6}$/.test(emp.id.value)) { msg = 'Please enter an Employee ID like F-007.'; bad = emp.id; }
+            else if (!isNumber(emp.rate.value) || Number(emp.rate.value) <= 0) { msg = 'Daily rate must be a positive amount.'; bad = emp.rate; }
+            if (msg) {
+                e.preventDefault();
+                markInvalid(bad);
+                MsgBox.show(msg, 'Validation Error', 'warning').then(function () { bad.focus(); });
+            }
+        });
+    }
+
+    var pwForm = $('#password-form');
+    if (pwForm) {
+        var pw = { cur: $('#txtCurrentPw'), next: $('#txtNewPw'), confirm: $('#txtConfirmPw') };
+        var minPw = Number(pw.next.getAttribute('minlength')) || 6;
+        pwForm.addEventListener('submit', function (e) {
+            clearInvalid(pwForm);
+            var msg = null, bad = null;
+            if (pw.cur.value === '') { msg = 'Please enter your current password.'; bad = pw.cur; }
+            else if (pw.next.value.length < minPw) { msg = 'The new password must be at least ' + minPw + ' characters.'; bad = pw.next; }
+            else if (pw.next.value !== pw.confirm.value) { msg = 'The new passwords do not match.'; bad = pw.confirm; }
+            if (msg) {
+                e.preventDefault();
+                markInvalid(bad);
+                MsgBox.show(msg, 'Validation Error', 'warning').then(function () { bad.focus(); });
+            }
+        });
     }
 
     /* =================================================================

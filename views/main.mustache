@@ -19,6 +19,13 @@
                 <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Employee schedule</a>
             <a href="/payroll" class="nav-item{{#tabPayroll}} active{{/tabPayroll}}" data-tab="payroll">
                 <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/></svg>{{#isAdmin}}Payroll{{/isAdmin}}{{^isAdmin}}My payroll{{/isAdmin}}</a>
+            {{#isAdmin}}
+            <a href="/employees" class="nav-item{{#tabEmployees}} active{{/tabEmployees}}" data-tab="employees">
+                <svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 010 7M18.5 14.5c1.6.8 2.6 2.7 3 5.5"/></svg>Employees</a>
+            {{/isAdmin}}
+            <div class="nav-label">Account</div>
+            <a href="/account" class="nav-item{{#tabAccount}} active{{/tabAccount}}" data-tab="account">
+                <svg class="ico" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3M12 14v3"/></svg>My account</a>
         </nav>
         <div class="sidebar-foot">
             <a class="side-link" href="/docs" target="_blank" rel="noopener">API documentation ↗</a>
@@ -42,6 +49,8 @@
             <a href="/inventory" class="nav-item{{#tabInventory}} active{{/tabInventory}}" data-tab="inventory">Inventory</a>
             <a href="/schedule" class="nav-item{{#tabSchedule}} active{{/tabSchedule}}" data-tab="schedule">Schedule</a>
             <a href="/payroll" class="nav-item{{#tabPayroll}} active{{/tabPayroll}}" data-tab="payroll">{{#isAdmin}}Payroll{{/isAdmin}}{{^isAdmin}}My payroll{{/isAdmin}}</a>
+            {{#isAdmin}}<a href="/employees" class="nav-item{{#tabEmployees}} active{{/tabEmployees}}" data-tab="employees">Employees</a>{{/isAdmin}}
+            <a href="/account" class="nav-item{{#tabAccount}} active{{/tabAccount}}" data-tab="account">Account</a>
         </nav>
 
     <main class="main">
@@ -462,10 +471,132 @@
                 </div>
             </div>
         </section>
+
+        {{#isAdmin}}
+        <!-- =========================================================== -->
+        <!-- EMPLOYEES (admin)                                            -->
+        <!-- =========================================================== -->
+        <section data-tabpage="employees" data-title="Employees" {{^tabEmployees}}hidden{{/tabEmployees}}>
+            <div class="page-head">
+                <div>
+                    <p class="eyebrow">Employees</p>
+                    <h1>Employees &amp; logins</h1>
+                    <p class="sub">Add, rename or remove employees. Each employee signs in with their Employee ID and sets their own password.</p>
+                </div>
+            </div>
+
+            <div class="layout">
+                <form id="employee-form" class="card" method="post" action="/employees" novalidate>
+                    <input type="hidden" name="_token" value="{{csrfToken}}">
+                    <div class="card-head"><h2>Add employee</h2><span class="badge new">New</span></div>
+                    <div class="card-body">
+                        <div class="fields">
+                            <div class="field full"><label for="txtNewEmpName">Full name</label>
+                                <input class="input" id="txtNewEmpName" name="name" maxlength="100" placeholder="e.g. Ana Lopez" autocomplete="off"></div>
+                            <div class="field"><label for="txtNewEmpId">Employee ID</label>
+                                <input class="input" id="txtNewEmpId" name="employee_id" value="{{employees.nextId}}" maxlength="12" placeholder="F-007" autocomplete="off"></div>
+                            <div class="field"><label for="txtNewEmpRate">Daily rate (₱)</label>
+                                <input class="input" id="txtNewEmpRate" name="daily_rate" inputmode="decimal" value="{{employees.defaultRate}}"></div>
+                        </div>
+                        <p class="form-note">The employee signs in with their <strong>Employee ID</strong> and the starting password
+                            <strong>{{employees.defaultPassword}}</strong>. They will be asked to choose their own password on their first sign-in.</p>
+                    </div>
+                    <div class="card-foot">
+                        <button type="submit" class="btn btn-primary btn-block" id="btnAddEmployee">Add employee</button>
+                    </div>
+                </form>
+
+                <div class="card">
+                    <div class="card-head"><h2>All employees</h2><span class="hint">{{employees.count}} employees</span></div>
+                    <div class="table-wrap">
+                        <table class="emp-table">
+                            <thead><tr><th>Employee</th><th class="num">Daily rate</th><th>Password</th><th class="num">Actions</th></tr></thead>
+                            <tbody>
+                                {{#employees.rows}}
+                                <tr>
+                                    <td><div class="person"><span class="avatar">{{initials}}</span><div><div class="strong">{{name}}</div><div class="meta">{{employee_id}}</div></div></div></td>
+                                    <td class="num muted">{{rate_display}}</td>
+                                    <td>{{#ownPassword}}<span class="badge new">Own password</span>{{/ownPassword}}{{^ownPassword}}<span class="badge edit">Starting password</span>{{/ownPassword}}</td>
+                                    <td class="num">
+                                        <div class="row-actions">
+                                            <button type="button" class="btn btn-outline btn-sm js-rename" data-target="rename-{{employee_id}}">Rename</button>
+                                            <form method="post" action="/employees/{{employee_id}}/reset-password" data-confirm="Reset the password of {{name}} ({{employee_id}}) to {{employees.defaultPassword}}?&#10;They will be asked to set a new one when they sign in." data-caption="Reset Password">
+                                                <input type="hidden" name="_token" value="{{csrfToken}}">
+                                                <button type="submit" class="btn btn-outline btn-sm">Reset password</button>
+                                            </form>
+                                            <form method="post" action="/employees/{{employee_id}}/delete" data-confirm="Remove {{name}} ({{employee_id}})?&#10;Their payroll record, schedule row and login will be deleted. This cannot be undone." data-caption="Remove Employee" data-danger>
+                                                <input type="hidden" name="_token" value="{{csrfToken}}">
+                                                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="rename-row" id="rename-{{employee_id}}" hidden>
+                                    <td colspan="4">
+                                        <form class="inline-form" method="post" action="/employees/{{employee_id}}/name">
+                                            <input type="hidden" name="_token" value="{{csrfToken}}">
+                                            <label class="sr-only" for="name-{{employee_id}}">New name for {{employee_id}}</label>
+                                            <input class="input" id="name-{{employee_id}}" name="name" value="{{name}}" maxlength="100" required autocomplete="off">
+                                            <button type="submit" class="btn btn-primary btn-sm">Save name</button>
+                                            <button type="button" class="btn btn-ghost btn-sm js-rename-cancel">Cancel</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {{/employees.rows}}
+                                {{^employees.rows}}
+                                <tr class="empty-row"><td colspan="4">No employees yet. Add one with the form.</td></tr>
+                                {{/employees.rows}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+        {{/isAdmin}}
+
+        <!-- =========================================================== -->
+        <!-- MY ACCOUNT                                                   -->
+        <!-- =========================================================== -->
+        <section data-tabpage="account" data-title="My account" {{^tabAccount}}hidden{{/tabAccount}}>
+            <div class="page-head">
+                <div>
+                    <p class="eyebrow">My account</p>
+                    <h1>{{#account.mustChange}}Set your password{{/account.mustChange}}{{^account.mustChange}}Change password{{/account.mustChange}}</h1>
+                    <p class="sub">You sign in as <strong>{{account.username}}</strong>.{{#isEmployee}} If you forget your password, ask the admin to reset it.{{/isEmployee}}</p>
+                </div>
+            </div>
+
+            {{#account.mustChange}}
+            <div class="banner">
+                <svg class="ico" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+                <div><strong>You are using a starting password.</strong>Choose your own password to continue. Your current password is the one you just signed in with.</div>
+            </div>
+            {{/account.mustChange}}
+
+            <form id="password-form" class="card account-card" method="post" action="/account/password" novalidate>
+                <input type="hidden" name="_token" value="{{csrfToken}}">
+                <input type="text" name="username" value="{{account.username}}" autocomplete="username" hidden>
+                <div class="card-head"><h2>Password</h2></div>
+                <div class="card-body">
+                    <div class="fields">
+                        <div class="field full"><label for="txtCurrentPw">Current password</label>
+                            <input class="input" type="password" id="txtCurrentPw" name="current_password" autocomplete="current-password"></div>
+                        <div class="field full"><label for="txtNewPw">New password</label>
+                            <input class="input" type="password" id="txtNewPw" name="new_password" autocomplete="new-password" minlength="{{account.minPassword}}" maxlength="72"></div>
+                        <div class="field full"><label for="txtConfirmPw">Confirm new password</label>
+                            <input class="input" type="password" id="txtConfirmPw" name="confirm_password" autocomplete="new-password" maxlength="72"></div>
+                    </div>
+                    <p class="form-note">At least {{account.minPassword}} characters.</p>
+                </div>
+                <div class="card-foot">
+                    <button type="submit" class="btn btn-primary btn-block" id="btnChangePw">Save password</button>
+                </div>
+            </form>
+        </section>
     </main>
     </div>
 </div>
 
 <form id="logout-form" method="post" action="/logout" hidden><input type="hidden" name="_token" value="{{csrfToken}}"></form>
 <div id="old-input" hidden data-json="{{oldJson}}"></div>
-<div id="page-state" hidden data-inventory-selected="{{inventory.selected}}" data-payroll-selected="{{payroll.selected}}" data-payroll-own="{{payroll.ownSelected}}"></div>
+<div id="page-state" hidden data-inventory-selected="{{inventory.selected}}" data-payroll-selected="{{payroll.selected}}" data-payroll-own="{{payroll.ownSelected}}"{{#account.mustChange}} data-must-change{{/account.mustChange}}></div>

@@ -9,14 +9,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Login account. Admins have no employee_id; employees sign in with their Employee ID
- * and can only see their own payroll.
+ * and can only see their own payroll. must_change_password is set for new accounts and
+ * after an admin reset, so the employee is asked to choose their own password.
  */
 final class User extends Model
 {
     protected $table = 'users';
 
     /** @var list<string> */
-    protected $fillable = ['username', 'password_hash', 'role', 'employee_id'];
+    protected $fillable = ['username', 'password_hash', 'role', 'employee_id', 'must_change_password'];
+
+    /** @var array<string, string> */
+    protected $casts = ['must_change_password' => 'boolean'];
 
     /** @var list<string> */
     protected $hidden = ['password_hash'];

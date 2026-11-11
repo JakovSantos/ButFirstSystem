@@ -61,6 +61,16 @@ final class AuthController
         ]);
         Logger::info("Login '{$account->username}' ({$account->role})");
 
+        // A new or reset account sets its own password first.
+        if ($account->must_change_password) {
+            Session::flash(
+                "Welcome, {$name}! Please set your own password to finish signing in.",
+                'Set Your Password',
+                'information'
+            );
+            Response::redirect('/account');
+        }
+
         // Employees land on their own payroll; admins on the inventory.
         Response::redirect($account->role === 'admin' ? '/inventory' : '/payroll');
     }

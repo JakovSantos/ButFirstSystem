@@ -8,12 +8,13 @@ use App\Core\Session;
 use App\Models\EmployeeShift;
 use App\Models\Payroll;
 use App\Models\Product;
+use App\Models\User;
 
 /**
  * Builds the view-model for views/main.mustache (the main window).
  *
- * All three modules are rendered on every request
- * (INVENTORY, EMPLOYEE SCHEDULE, PAYROLL MANAGEMENT); $tab only decides which one is visible.
+ * All modules are rendered on every request (INVENTORY, EMPLOYEE SCHEDULE, PAYROLL
+ * MANAGEMENT, EMPLOYEES for the admin, MY ACCOUNT); $tab only decides which one is visible.
  */
 final class MainWindow
 {
@@ -31,9 +32,13 @@ final class MainWindow
             'tabInventory'   => $tab === 'inventory',
             'tabSchedule'    => $tab === 'schedule',
             'tabPayroll'     => $tab === 'payroll',
+            'tabEmployees'   => $tab === 'employees',
+            'tabAccount'     => $tab === 'account',
             'inventory'      => self::inventory($search, $query),
             'schedule'       => self::schedule($query),
             'payroll'        => self::payroll($query),
+            'employees'      => self::employees(),
+            'account'        => self::account(),
             'today'          => date('Y-m-d'),
             // Values re-filled after a failed validation (read by public/assets/js/app.js).
             'oldJson'        => json_encode((object) Session::pullInput(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG),
@@ -220,6 +225,57 @@ final class MainWindow
             'selected'     => (string) ($query['selected'] ?? ''),
             'start'        => self::dateParam($query['pay_start'] ?? null),
             'end'          => self::dateParam($query['pay_end'] ?? null),
+        ];
+    }
+
+    /**
+     * EMPLOYEES module (admin only): every employee with their login status.
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function employees(): ?array
+    {
+        if ((Session::get('user')['role'] ?? '') !== 'admin') {
+            return null;
+        }
+
+        $accounts = User::query()->whereNotNull('employee_id')->get()->keyBy('employee_id');
+        $rows = [];
+        foreach (Payroll::query()->orderBy('employee_id')->get() as $p) {
+            $account = $accounts->get($p->employee_id);
+            $rows[] = [
+                'employee_id'  => $p->employee_id,
+                'name'         => $p->name,
+                'initials'     => self::initials((string) $p->name),
+                'rate_display' => Format::peso($p->daily_rate ?: 550),
+                'hasLogin'     => $account !== null,
+                'ownPassword'  => $account !== null && ! $account->must_change_password,
+            ];
+        }
+
+        return [
+            'rows'            => $rows,
+            'count'           => count($rows),
+            'nextId'          => EmployeeManager::nextId(),
+            'defaultRate'     => Format::plain2((float) \App\Core\App::config('payroll.daily_rate', 550)),
+            'defaultPassword' => EmployeeManager::defaultPassword(),
+        ];
+    }
+
+    /**
+     * MY ACCOUNT module: change your own password.
+     *
+     * @return array<string, mixed>
+     */
+    private static function account(): array
+    {
+        $user = Session::get('user') ?? [];
+        $account = isset($user['id']) ? User::find((int) $user['id']) : null;
+
+        return [
+            'username'    => (string) ($user['username'] ?? ''),
+            'mustChange'  => (bool) ($account?->must_change_password),
+            'minPassword' => EmployeeManager::MIN_PASSWORD,
         ];
     }
 

@@ -505,3 +505,18 @@ h1, h2, h3 { margin: 0; letter-spacing: -.01em; }
     .pay-hero .value { font-size: 19px; }
     .pay-hero .value.big { font-size: 22px; }
 }
+
+/* ---------- Employees and My account ---------- */
+.form-note { margin: 14px 0 0; font-size: 13px; color: var(--muted, #6b6b6b); line-height: 1.5; }
+.row-actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.row-actions form { margin: 0; }
+.emp-table td { vertical-align: middle; }
+.rename-row td { background: var(--accent-soft, #f7efe6); }
+.inline-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.inline-form .input { flex: 1 1 220px; min-width: 0; }
+.account-card { max-width: 520px; }
+[data-tabpage="account"] .banner { max-width: 520px; margin-bottom: 20px; }
+@media (max-width: 720px) {
+    .row-actions { flex-wrap: nowrap; }
+    .emp-table th, .emp-table td { white-space: nowrap; }
+}
