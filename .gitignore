@@ -2,3 +2,6 @@
 /storage/logs/*.log
 /storage/cache/
 .phpunit.result.cache
+
+# Presentation recordings and renders (large video files, never pushed)
+/presentation/
